@@ -68,10 +68,10 @@ struct TaskRowView: View {
                 .strikethrough(task.isCompleted)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let days = task.daysUntilDeadline {
-                DeadlineBadge(days: days)
-            } else if task.isCompleted {
+            if task.isCompleted {
                 CompletedBadge()
+            } else if let days = task.daysUntilDeadline {
+                DeadlineBadge(days: days)
             }
         }
         .padding(.horizontal, 12)
