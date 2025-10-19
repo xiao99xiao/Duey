@@ -73,9 +73,9 @@ struct TaskHeaderView: View {
                 .textFieldStyle(.plain)
                 .font(.title2)
                 .focused($titleFocused)
-                .frame(maxWidth: .infinity)
+                .lineLimit(1...5)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.vertical, 4)
 
             VStack(alignment: .trailing, spacing: 8) {
                 HStack(alignment: .center, spacing: 8) {
