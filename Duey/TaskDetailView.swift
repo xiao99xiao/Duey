@@ -69,22 +69,12 @@ struct TaskHeaderView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            ZStack(alignment: .topLeading) {
-                if task.title.isEmpty {
-                    Text("Task Title")
-                        .font(.title2)
-                        .foregroundStyle(.placeholder)
-                        .allowsHitTesting(false)
-                }
-
-                TextEditor(text: $task.title)
-                    .font(.title2)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .focused($titleFocused)
-                    .frame(minHeight: 32)
-            }
-            .frame(maxWidth: .infinity)
+            TextField("Task Title", text: $task.title, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.title2)
+                .focused($titleFocused)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .trailing, spacing: 8) {
                 HStack(alignment: .center, spacing: 8) {
