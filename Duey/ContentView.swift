@@ -15,6 +15,8 @@ struct ContentView: View {
     @State private var pendingNewTask: Task?
     @State private var deletedTaskBackup: Task?
     @State private var showDeleteToast = false
+    @StateObject private var smartTaskCapture = SmartTaskCapture()
+    @State private var showingSmartCaptureSettings = false
 
     var sortedTasks: [Task] {
         let unfinishedTasks = tasks.filter { !$0.isCompleted }
@@ -54,6 +56,24 @@ struct ContentView: View {
                     showDeleteToast = true
                 }
             )
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button(action: {
+                        smartTaskCapture.analyzeClipboard()
+                    }) {
+                        Label("Analyze Clipboard", systemImage: "clipboard.fill")
+                    }
+                    .help("Test Smart Task Capture (⌘⇧T)")
+                    .disabled(!smartTaskCapture.isEnabled || smartTaskCapture.apiKey.isEmpty)
+
+                    Button(action: {
+                        showingSmartCaptureSettings = true
+                    }) {
+                        Label("Smart Capture Settings", systemImage: "brain.head.profile")
+                    }
+                    .help("Configure Smart Task Capture")
+                }
+            }
         } detail: {
             if let selectedTask = selectedTask {
                 TaskDetailView(task: selectedTask, pendingNewTask: $pendingNewTask)
@@ -88,6 +108,41 @@ struct ContentView: View {
                 }
             }
         )
+        .overlay {
+            // Smart Task Capture suggestion dialog
+            if smartTaskCapture.showSuggestionDialog,
+               let suggestion = smartTaskCapture.currentSuggestion {
+                TaskSuggestionOverlay(
+                    isPresented: $smartTaskCapture.showSuggestionDialog,
+                    suggestion: suggestion,
+                    originalText: smartTaskCapture.currentOriginalText,
+                    onAccept: { title, content, deadline in
+                        smartTaskCapture.acceptSuggestion(title: title, content: content, deadline: deadline)
+                        // Select the newly created task
+                        if let newTask = tasks.first(where: { $0.title == title }) {
+                            selectedTask = newTask
+                        }
+                    },
+                    onDecline: {
+                        smartTaskCapture.declineSuggestion()
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showingSmartCaptureSettings) {
+            SmartTaskCaptureSettings(smartCapture: smartTaskCapture)
+        }
+        .background(
+            // Global keyboard shortcut for Smart Task Capture
+            Button("") {
+                smartTaskCapture.analyzeClipboard()
+            }
+            .keyboardShortcut("t", modifiers: [.command, .shift])
+            .hidden()
+        )
+        .onAppear {
+            smartTaskCapture.configure(modelContext: modelContext)
+        }
         .onChange(of: selectedTask) { oldTask, newTask in
             handleTaskSelectionChange(from: oldTask, to: newTask)
         }
