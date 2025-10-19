@@ -11,7 +11,6 @@ import Combine
 
 @MainActor
 class SmartTaskCapture: ObservableObject {
-    @Published var isEnabled = false
     @Published var showSuggestionDialog = false
     @Published var currentSuggestion: TaskExtractionResponse?
     @Published var currentOriginalText = ""
@@ -22,24 +21,41 @@ class SmartTaskCapture: ObservableObject {
     private let pasteboardAnalyzer = PasteboardAnalyzer()
     private let extractionService = TaskExtractionService()
     private var modelContext: ModelContext?
+    private var appSettings: AppSettings?
 
-    // User preferences
-    @Published var apiKey = ""
-    @Published var confidenceThreshold: Double = 0.7
-    @Published var outputLanguage = "auto" // "auto" or language code like "en", "zh", "ja", etc.
-    @Published var useRichContent = true // Use markdown formatting
-
-    func configure(modelContext: ModelContext) {
-        self.modelContext = modelContext
-        setupPasteboardAnalyzer()
-        loadSettings()
+    // Computed properties that access AppSettings
+    var isEnabled: Bool {
+        appSettings?.smartCaptureEnabled ?? false
     }
 
-    func setAPIKey(_ key: String) {
-        apiKey = key
-        extractionService.setAPIKey(key)
-        saveSettings()
-        print("SmartTaskCapture: API key updated")
+    var apiKey: String {
+        appSettings?.smartCaptureAPIKey ?? ""
+    }
+
+    var confidenceThreshold: Double {
+        appSettings?.smartCaptureConfidenceThreshold ?? 0.7
+    }
+
+    var outputLanguage: String {
+        appSettings?.smartCaptureOutputLanguage ?? "auto"
+    }
+
+    var useRichContent: Bool {
+        appSettings?.smartCaptureUseRichContent ?? true
+    }
+
+    func configure(modelContext: ModelContext, appSettings: AppSettings) {
+        self.modelContext = modelContext
+        self.appSettings = appSettings
+        setupPasteboardAnalyzer()
+
+        // Configure the extraction service with current API key
+        if !apiKey.isEmpty {
+            extractionService.setAPIKey(apiKey)
+        }
+
+
+        print("SmartTaskCapture: Configured")
     }
 
     func analyzeClipboard() {
@@ -148,40 +164,5 @@ class SmartTaskCapture: ObservableObject {
         showSuggestionDialog = false
     }
 
-    // MARK: - Settings Persistence
-
-    private func loadSettings() {
-        isEnabled = UserDefaults.standard.bool(forKey: "SmartTaskCapture.isEnabled")
-        apiKey = UserDefaults.standard.string(forKey: "SmartTaskCapture.apiKey") ?? ""
-        confidenceThreshold = UserDefaults.standard.double(forKey: "SmartTaskCapture.confidenceThreshold")
-
-        if confidenceThreshold == 0 {
-            confidenceThreshold = 0.7 // Default value
-        }
-
-        outputLanguage = UserDefaults.standard.string(forKey: "SmartTaskCapture.outputLanguage") ?? "auto"
-        useRichContent = UserDefaults.standard.bool(forKey: "SmartTaskCapture.useRichContent")
-        if UserDefaults.standard.object(forKey: "SmartTaskCapture.useRichContent") == nil {
-            useRichContent = true // Default to true if not set
-        }
-
-
-        if !apiKey.isEmpty {
-            extractionService.setAPIKey(apiKey)
-        }
-
-        print("SmartTaskCapture: Settings loaded")
-    }
-
-    private func saveSettings() {
-        UserDefaults.standard.set(isEnabled, forKey: "SmartTaskCapture.isEnabled")
-        UserDefaults.standard.set(apiKey, forKey: "SmartTaskCapture.apiKey")
-        UserDefaults.standard.set(confidenceThreshold, forKey: "SmartTaskCapture.confidenceThreshold")
-        UserDefaults.standard.set(outputLanguage, forKey: "SmartTaskCapture.outputLanguage")
-        UserDefaults.standard.set(useRichContent, forKey: "SmartTaskCapture.useRichContent")
-
-
-        print("SmartTaskCapture: Settings saved")
-    }
 
 }

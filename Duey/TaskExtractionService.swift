@@ -94,8 +94,8 @@ class TaskExtractionService {
 
     private func createPrompt(for text: String, outputLanguage: String, useRichContent: Bool) -> (system: String, user: String) {
         let languageInstructions = outputLanguage == "auto"
-            ? "Use the same language as the input text"
-            : "Output everything in \(getLanguageName(for: outputLanguage))"
+            ? "IMPORTANT: Detect the language of the input text and respond in the EXACT SAME LANGUAGE. If the input is in English, respond in English. If the input is in Chinese, respond in Chinese, etc."
+            : "IMPORTANT: Output everything in \(getLanguageName(for: outputLanguage)) regardless of the input language"
 
         let contentFormatting = useRichContent
             ? "Use markdown formatting for better readability (headers, lists, emphasis, etc.)"
@@ -104,11 +104,7 @@ class TaskExtractionService {
         let systemPrompt = """
         You are an actionable task extraction assistant. Your job is to identify what the user needs to DO based on the given text.
 
-        Focus on extracting:
-        1. Direct actions: "call", "email", "prepare", "review", "schedule"
-        2. Pre-work for upcoming events: meetings, deadlines, releases, appointments
-        3. Preparation tasks: research, documents, materials needed
-        4. Follow-up actions implied by the content
+        CRITICAL: You MUST respond with VALID JSON ONLY. No explanations, no extra text, just pure JSON.
 
         Respond with JSON in this exact format:
         {
@@ -119,6 +115,18 @@ class TaskExtractionService {
             "content": "comprehensive description with background and context" or null
         }
 
+        CRITICAL LANGUAGE REQUIREMENT:
+        \(languageInstructions)
+        - The title and content fields in your JSON response MUST follow this language requirement
+        - Maintain absolute consistency in language throughout title and content
+        - Do NOT mix languages - use only ONE language for the entire response
+
+        Focus on extracting:
+        1. Direct actions: "call", "email", "prepare", "review", "schedule"
+        2. Pre-work for upcoming events: meetings, deadlines, releases, appointments
+        3. Preparation tasks: research, documents, materials needed
+        4. Follow-up actions implied by the content
+
         Content Guidelines:
         - Provide full background information and context
         - Include WHY the task is needed
@@ -126,10 +134,6 @@ class TaskExtractionService {
         - Include any mentioned people, dates, locations, or requirements
         - \(contentFormatting)
         - Make the content comprehensive but organized
-
-        Language Guidelines:
-        - \(languageInstructions)
-        - Maintain consistency in language throughout title and content
 
         Task Extraction Guidelines:
         - Extract actionable tasks, not just information
@@ -222,7 +226,14 @@ class TaskExtractionService {
                 throw TaskExtractionError.noContent
             }
 
-            let taskResponse = try JSONDecoder().decode(TaskExtractionResponse.self, from: messageContent.data(using: .utf8)!)
+            // Log the raw response for debugging
+            print("TaskExtractionService: Raw OpenAI response: \(messageContent)")
+
+            guard let responseData = messageContent.data(using: .utf8) else {
+                throw TaskExtractionError.decodingError(NSError(domain: "UTF8Encoding", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to convert response to UTF8 data"]))
+            }
+
+            let taskResponse = try JSONDecoder().decode(TaskExtractionResponse.self, from: responseData)
             return taskResponse
         } catch {
             throw TaskExtractionError.decodingError(error)

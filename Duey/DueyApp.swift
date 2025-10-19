@@ -32,5 +32,9 @@ struct DueyApp: App {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+
+        Settings {
+            SettingsView()
+        }
     }
 }

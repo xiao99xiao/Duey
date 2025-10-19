@@ -10,13 +10,14 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openSettings) private var openSettings
     @Query private var tasks: [Task]
     @State private var selectedTask: Task?
     @State private var pendingNewTask: Task?
     @State private var deletedTaskBackup: Task?
     @State private var showDeleteToast = false
+    @StateObject private var appSettings = AppSettings()
     @StateObject private var smartTaskCapture = SmartTaskCapture()
-    @State private var showingSmartCaptureSettings = false
 
     var sortedTasks: [Task] {
         let unfinishedTasks = tasks.filter { !$0.isCompleted }
@@ -32,16 +33,22 @@ struct ContentView: View {
                 }
             }
 
-        let finishedTasks = tasks.filter { $0.isCompleted }
-            .sorted { (task1, task2) in
-                guard let completed1 = task1.completedAt,
-                      let completed2 = task2.completedAt else {
-                    return false
-                }
-                return completed1 > completed2
-            }
+        // Only include completed tasks if the setting is enabled
+        var allTasks = unfinishedTasks
 
-        return unfinishedTasks + finishedTasks
+        if appSettings.showCompletedTasks {
+            let finishedTasks = tasks.filter { $0.isCompleted }
+                .sorted { (task1, task2) in
+                    guard let completed1 = task1.completedAt,
+                          let completed2 = task2.completedAt else {
+                        return false
+                    }
+                    return completed1 > completed2
+                }
+            allTasks += finishedTasks
+        }
+
+        return allTasks
     }
 
     var body: some View {
@@ -64,14 +71,14 @@ struct ContentView: View {
                         Label("Analyze Clipboard", systemImage: "clipboard.fill")
                     }
                     .help("Test Smart Task Capture (⌘⇧T)")
-                    .disabled(!smartTaskCapture.isEnabled || smartTaskCapture.apiKey.isEmpty)
+                    .disabled(!appSettings.smartCaptureEnabled || appSettings.smartCaptureAPIKey.isEmpty)
 
                     Button(action: {
-                        showingSmartCaptureSettings = true
+                        openSettings()
                     }) {
-                        Label("Smart Capture Settings", systemImage: "brain.head.profile")
+                        Label("Preferences", systemImage: "gearshape")
                     }
-                    .help("Configure Smart Task Capture")
+                    .help("Open Preferences (⌘,)")
                 }
             }
         } detail: {
@@ -129,9 +136,6 @@ struct ContentView: View {
                 )
             }
         }
-        .sheet(isPresented: $showingSmartCaptureSettings) {
-            SmartTaskCaptureSettings(smartCapture: smartTaskCapture)
-        }
         .background(
             // Global keyboard shortcut for Smart Task Capture
             Button("") {
@@ -141,7 +145,7 @@ struct ContentView: View {
             .hidden()
         )
         .onAppear {
-            smartTaskCapture.configure(modelContext: modelContext)
+            smartTaskCapture.configure(modelContext: modelContext, appSettings: appSettings)
         }
         .onChange(of: selectedTask) { oldTask, newTask in
             handleTaskSelectionChange(from: oldTask, to: newTask)
