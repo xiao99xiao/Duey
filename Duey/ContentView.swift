@@ -77,23 +77,21 @@ struct EmptyStateView: View {
 
     var body: some View {
         VStack {
+            Image(systemName: "checklist")
+                .font(.system(size: 48))
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 8)
+
             Text("No Task Selected")
                 .font(.title2)
                 .foregroundStyle(.secondary)
 
-            Button("Create New Task") {
-                createNewTask()
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top)
+            Text("Select a task from the sidebar or create a new one")
+                .font(.body)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func createNewTask() {
-        let newTask = Task(title: "")
-        modelContext.insert(newTask)
-        pendingNewTask = newTask
     }
 }
 

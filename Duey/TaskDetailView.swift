@@ -16,27 +16,37 @@ struct TaskDetailView: View {
     @FocusState private var titleFocused: Bool
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                TaskHeaderView(
-                    task: task,
-                    showingDatePicker: $showingDatePicker,
-                    titleFocused: $titleFocused
-                )
+        VStack(spacing: 0) {
+            TaskHeaderView(
+                task: task,
+                showingDatePicker: $showingDatePicker,
+                titleFocused: $titleFocused
+            )
 
-                Divider()
+            Divider()
 
-                MarkdownEditorView(task: task)
-                    .padding(.bottom, 80)
-            }
-
-            FloatingActionView(task: task)
+            MarkdownEditorView(task: task)
         }
         .navigationTitle("")
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button("New Task", systemImage: "plus") {
-                    createNewTask()
+            ToolbarItemGroup(placement: .primaryAction) {
+                if task.isCompleted {
+                    Button(action: {
+                        withAnimation {
+                            task.markAsIncomplete()
+                        }
+                    }) {
+                        Label("Mark Incomplete", systemImage: "checkmark.circle.fill")
+                    }
+                    .foregroundStyle(.green)
+                } else {
+                    Button(action: {
+                        withAnimation {
+                            task.markAsCompleted()
+                        }
+                    }) {
+                        Label("Mark Done", systemImage: "circle")
+                    }
                 }
             }
         }
@@ -45,17 +55,13 @@ struct TaskDetailView: View {
                 titleFocused = true
             }
         }
-        .popover(isPresented: $showingDatePicker) {
-            DeadlinePickerView(deadline: $task.deadline)
-                .frame(width: 320, height: 400)
+        .sheet(isPresented: $showingDatePicker) {
+            NavigationStack {
+                DeadlinePickerView(deadline: $task.deadline)
+            }
         }
     }
 
-    private func createNewTask() {
-        let newTask = Task(title: "")
-        modelContext.insert(newTask)
-        pendingNewTask = newTask
-    }
 }
 
 struct TaskHeaderView: View {
@@ -125,11 +131,7 @@ struct DeadlinePickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Set Deadline")
-                .font(.headline)
-                .padding(.top)
-
+        VStack(spacing: 24) {
             DatePicker(
                 "Date",
                 selection: $selectedDate,
@@ -143,20 +145,27 @@ struct DeadlinePickerView: View {
                 displayedComponents: [.hourAndMinute]
             )
             .datePickerStyle(.compact)
-            .frame(maxWidth: 200)
-
-            HStack(spacing: 12) {
+        }
+        .padding()
+        .navigationTitle("Set Deadline")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
                     dismiss()
                 }
-                .buttonStyle(.bordered)
+            }
 
-                Button("Clear") {
-                    deadline = nil
-                    dismiss()
+            ToolbarItem(placement: .destructiveAction) {
+                if deadline != nil {
+                    Button("Clear") {
+                        deadline = nil
+                        dismiss()
+                    }
                 }
-                .buttonStyle(.bordered)
+            }
 
+            ToolbarItem(placement: .confirmationAction) {
                 Button("Set") {
                     let calendar = Calendar.current
                     let dateComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
@@ -172,11 +181,9 @@ struct DeadlinePickerView: View {
                     deadline = calendar.date(from: combinedComponents)
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .fontWeight(.semibold)
             }
-            .padding(.bottom)
         }
-        .padding()
         .onAppear {
             if let deadline = deadline {
                 selectedDate = deadline
@@ -185,42 +192,6 @@ struct DeadlinePickerView: View {
                 selectedTime = Task.defaultDeadlineTime(for: Date())
             }
         }
-    }
-}
-
-struct FloatingActionView: View {
-    @Bindable var task: Task
-
-    var body: some View {
-        VStack(spacing: 8) {
-            if task.isCompleted {
-                if let completedAt = task.completedAt {
-                    Text("Completed \(completedAt.formatted(.relative(presentation: .named)))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Button("Mark as Incomplete") {
-                    withAnimation {
-                        task.markAsIncomplete()
-                    }
-                }
-                .buttonStyle(.bordered)
-            } else {
-                Button("Mark as Done") {
-                    withAnimation {
-                        task.markAsCompleted()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-            }
-        }
-        .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 4)
-        .padding()
     }
 }
 
