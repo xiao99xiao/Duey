@@ -8,47 +8,94 @@
 import AppIntents
 import SwiftUI
 import WidgetKit
+import SwiftData
+import Foundation
 
 struct TaskListControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
-            kind: "com.xiao99xiao.Duey.TaskList",
+            kind: "com.xiao99xiao.Duey.TaskListControl",
             provider: Provider()
-        ) { value in
-            ControlWidgetToggle(
-                "Start Timer",
-                isOn: value,
-                action: StartTimerIntent()
-            ) { isRunning in
-                Label(isRunning ? "On" : "Off", systemImage: "timer")
+        ) { taskCount in
+            ControlWidgetButton(action: OpenDueyAppIntent()) {
+                HStack(spacing: 4) {
+                    Image(systemName: "checklist")
+                        .font(.system(.caption, weight: .medium))
+                    Text("\(taskCount)")
+                        .font(.system(.caption, weight: .semibold))
+                }
+                .foregroundStyle(.blue)
             }
         }
-        .displayName("Timer")
-        .description("A an example control that runs a timer.")
+        .displayName("Task Count")
+        .description("Shows pending task count and opens Duey app.")
     }
 }
 
 extension TaskListControl {
     struct Provider: ControlValueProvider {
-        var previewValue: Bool {
-            false
+        var previewValue: Int {
+            3
         }
 
-        func currentValue() async throws -> Bool {
-            let isRunning = true // Check if the timer is running
-            return isRunning
+        func currentValue() async throws -> Int {
+            // Return the number of unfinished tasks
+            do {
+                let schema = Schema([Task.self])
+                let modelConfiguration = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: false,
+                    cloudKitDatabase: .automatic
+                )
+                let modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+                let context = ModelContext(modelContainer)
+
+                let descriptor = FetchDescriptor<Task>(
+                    predicate: #Predicate { !$0.isCompleted }
+                )
+
+                let tasks = try context.fetch(descriptor)
+                return tasks.count
+            } catch {
+                print("Control Widget: Failed to fetch task count: \(error)")
+                return 0
+            }
         }
     }
 }
 
-struct StartTimerIntent: SetValueIntent {
-    static let title: LocalizedStringResource = "Start a timer"
+struct OpenDueyAppIntent: AppIntent {
+    static let title: LocalizedStringResource = "Open Duey"
+    static let description = IntentDescription("Opens the Duey app")
 
-    @Parameter(title: "Timer is running")
-    var value: Bool
+    static var openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult {
-        // Start / stop the timer based on `value`.
         return .result()
+    }
+}
+
+// Task model for control widget (matches main app Task model)
+@Model
+final class Task {
+    var title: String
+    var content: String?
+    var deadline: Date?
+    var isCompleted: Bool
+    var createdAt: Date
+    var completedAt: Date?
+
+    init(
+        title: String = "",
+        content: String? = nil,
+        deadline: Date? = nil,
+        isCompleted: Bool = false
+    ) {
+        self.title = title
+        self.content = content
+        self.deadline = deadline
+        self.isCompleted = isCompleted
+        self.createdAt = Date()
+        self.completedAt = nil
     }
 }
