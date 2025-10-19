@@ -12,6 +12,7 @@ struct TaskDetailView: View {
     @Bindable var task: Task
     @Binding var pendingNewTask: Task?
     @State private var showingDatePicker = false
+    @State private var showingTimePicker = false
     @Environment(\.modelContext) private var modelContext
     @FocusState private var titleFocused: Bool
 
@@ -20,6 +21,7 @@ struct TaskDetailView: View {
             TaskHeaderView(
                 task: task,
                 showingDatePicker: $showingDatePicker,
+                showingTimePicker: $showingTimePicker,
                 titleFocused: $titleFocused
             )
 
@@ -55,10 +57,66 @@ struct TaskDetailView: View {
                 titleFocused = true
             }
         }
-        .sheet(isPresented: $showingDatePicker) {
-            NavigationStack {
-                DeadlinePickerView(deadline: $task.deadline)
-            }
+        .popover(isPresented: $showingDatePicker) {
+            DatePickerPopover(date: Binding(
+                get: { task.deadline ?? Date() },
+                set: { newDate in
+                    if let existingDeadline = task.deadline {
+                        // Preserve time, update date
+                        let calendar = Calendar.current
+                        let timeComponents = calendar.dateComponents([.hour, .minute], from: existingDeadline)
+                        let dateComponents = calendar.dateComponents([.year, .month, .day], from: newDate)
+
+                        var combined = DateComponents()
+                        combined.year = dateComponents.year
+                        combined.month = dateComponents.month
+                        combined.day = dateComponents.day
+                        combined.hour = timeComponents.hour
+                        combined.minute = timeComponents.minute
+
+                        task.deadline = calendar.date(from: combined)
+                    } else {
+                        // Set new date with default time (18:00)
+                        task.deadline = Task.defaultDeadlineTime(for: newDate)
+                    }
+                }
+            ))
+        }
+        .popover(isPresented: $showingTimePicker) {
+            TimePickerPopover(time: Binding(
+                get: { task.deadline ?? Task.defaultDeadlineTime(for: Date()) },
+                set: { newTime in
+                    if let existingDeadline = task.deadline {
+                        // Preserve date, update time
+                        let calendar = Calendar.current
+                        let dateComponents = calendar.dateComponents([.year, .month, .day], from: existingDeadline)
+                        let timeComponents = calendar.dateComponents([.hour, .minute], from: newTime)
+
+                        var combined = DateComponents()
+                        combined.year = dateComponents.year
+                        combined.month = dateComponents.month
+                        combined.day = dateComponents.day
+                        combined.hour = timeComponents.hour
+                        combined.minute = timeComponents.minute
+
+                        task.deadline = calendar.date(from: combined)
+                    } else {
+                        // Set today's date with selected time
+                        let calendar = Calendar.current
+                        let todayComponents = calendar.dateComponents([.year, .month, .day], from: Date())
+                        let timeComponents = calendar.dateComponents([.hour, .minute], from: newTime)
+
+                        var combined = DateComponents()
+                        combined.year = todayComponents.year
+                        combined.month = todayComponents.month
+                        combined.day = todayComponents.day
+                        combined.hour = timeComponents.hour
+                        combined.minute = timeComponents.minute
+
+                        task.deadline = calendar.date(from: combined)
+                    }
+                }
+            ))
         }
     }
 
@@ -67,6 +125,7 @@ struct TaskDetailView: View {
 struct TaskHeaderView: View {
     @Bindable var task: Task
     @Binding var showingDatePicker: Bool
+    @Binding var showingTimePicker: Bool
     @FocusState.Binding var titleFocused: Bool
 
     var body: some View {
@@ -77,18 +136,34 @@ struct TaskHeaderView: View {
                 .focused($titleFocused)
                 .frame(maxWidth: .infinity)
 
-            VStack(alignment: .trailing, spacing: 4) {
-                Button(action: { showingDatePicker.toggle() }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                            .font(.caption)
-                        Text(deadlineButtonText)
-                            .font(.caption)
+            VStack(alignment: .trailing, spacing: 6) {
+                HStack(spacing: 8) {
+                    Button(action: { showingDatePicker.toggle() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar")
+                                .font(.caption)
+                            Text(dateText)
+                                .font(.caption)
+                        }
+                        .foregroundStyle(deadlineColor)
                     }
-                    .foregroundStyle(deadlineButtonColor)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Set date")
+
+                    Button(action: { showingTimePicker.toggle() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.caption)
+                            Text(timeText)
+                                .font(.caption)
+                        }
+                        .foregroundStyle(deadlineColor)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Set time")
                 }
-                .buttonStyle(.plain)
-                .help("Set deadline")
 
                 if task.deadline != nil {
                     Button("Clear", systemImage: "xmark.circle.fill") {
@@ -103,17 +178,29 @@ struct TaskHeaderView: View {
         .padding()
     }
 
-    private var deadlineButtonText: String {
+    private var dateText: String {
         if let deadline = task.deadline {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .abbreviated
-            return formatter.localizedString(for: deadline, relativeTo: Date())
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .none
+            return formatter.string(from: deadline)
         } else {
-            return "Set Deadline"
+            return "Date"
         }
     }
 
-    private var deadlineButtonColor: Color {
+    private var timeText: String {
+        if let deadline = task.deadline {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .none
+            formatter.timeStyle = .short
+            return formatter.string(from: deadline)
+        } else {
+            return "Time"
+        }
+    }
+
+    private var deadlineColor: Color {
         guard let days = task.daysUntilDeadline else { return .blue }
         switch days {
         case ..<0: return .red
@@ -124,74 +211,39 @@ struct TaskHeaderView: View {
     }
 }
 
-struct DeadlinePickerView: View {
-    @Binding var deadline: Date?
-    @State private var selectedDate = Date()
-    @State private var selectedTime = Date()
-    @Environment(\.dismiss) private var dismiss
+struct DatePickerPopover: View {
+    @Binding var date: Date
 
     var body: some View {
-        VStack(spacing: 24) {
-            DatePicker(
-                "Date",
-                selection: $selectedDate,
-                displayedComponents: [.date]
-            )
-            .datePickerStyle(.graphical)
+        DatePicker(
+            "Select Date",
+            selection: $date,
+            displayedComponents: [.date]
+        )
+        .datePickerStyle(.graphical)
+        .frame(width: 320, height: 280)
+        .padding(12)
+    }
+}
+
+struct TimePickerPopover: View {
+    @Binding var time: Date
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Select Time")
+                .font(.headline)
 
             DatePicker(
                 "Time",
-                selection: $selectedTime,
+                selection: $time,
                 displayedComponents: [.hourAndMinute]
             )
-            .datePickerStyle(.compact)
+            .datePickerStyle(.wheel)
+            .labelsHidden()
         }
-        .padding()
-        .navigationTitle("Set Deadline")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
-
-            ToolbarItem(placement: .destructiveAction) {
-                if deadline != nil {
-                    Button("Clear") {
-                        deadline = nil
-                        dismiss()
-                    }
-                }
-            }
-
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Set") {
-                    let calendar = Calendar.current
-                    let dateComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
-                    let timeComponents = calendar.dateComponents([.hour, .minute], from: selectedTime)
-
-                    var combinedComponents = DateComponents()
-                    combinedComponents.year = dateComponents.year
-                    combinedComponents.month = dateComponents.month
-                    combinedComponents.day = dateComponents.day
-                    combinedComponents.hour = timeComponents.hour ?? 18
-                    combinedComponents.minute = timeComponents.minute ?? 0
-
-                    deadline = calendar.date(from: combinedComponents)
-                    dismiss()
-                }
-                .fontWeight(.semibold)
-            }
-        }
-        .onAppear {
-            if let deadline = deadline {
-                selectedDate = deadline
-                selectedTime = deadline
-            } else {
-                selectedTime = Task.defaultDeadlineTime(for: Date())
-            }
-        }
+        .frame(width: 200, height: 180)
+        .padding(16)
     }
 }
 
