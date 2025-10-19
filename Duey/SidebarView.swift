@@ -60,59 +60,105 @@ struct TaskRowView: View {
     let task: Task
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(task.title.isEmpty ? "Untitled Task" : task.title)
-                    .font(.body)
-                    .lineLimit(2)
+                    .font(.system(.body, design: .default, weight: .medium))
+                    .lineLimit(1)
                     .foregroundStyle(task.isCompleted ? .secondary : .primary)
                     .strikethrough(task.isCompleted)
-
-                if let days = task.daysUntilDeadline {
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                            .font(.caption2)
-                        Text(deadlineText(days: days))
-                            .font(.caption)
-                            .foregroundStyle(deadlineColor(days: days))
-                    }
-                }
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            if task.isCompleted {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .font(.caption)
+            if let days = task.daysUntilDeadline {
+                DeadlineBadge(days: days)
+            } else if task.isCompleted {
+                CompletedBadge()
             }
         }
-        .padding(.vertical, 2)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.clear)
+    }
+}
+
+struct DeadlineBadge: View {
+    let days: Int
+
+    var body: some View {
+        Text(badgeText)
+            .font(.system(.caption, design: .rounded, weight: .semibold))
+            .foregroundStyle(textColor)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(backgroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(strokeColor, lineWidth: 0.5)
+            )
     }
 
-    private func deadlineText(days: Int) -> String {
+    private var badgeText: String {
         switch days {
         case ..<0:
-            return "\(abs(days)) days overdue"
+            return "\(abs(days))d late"
         case 0:
-            return "Due today"
+            return "Today"
         case 1:
-            return "Due tomorrow"
+            return "1d"
         default:
-            return "Due in \(days) days"
+            return "\(days)d"
         }
     }
 
-    private func deadlineColor(days: Int) -> Color {
+    private var backgroundColor: Color {
+        switch days {
+        case ..<0:
+            return .red.opacity(0.1)
+        case 0:
+            return .orange.opacity(0.1)
+        case 1...3:
+            return .yellow.opacity(0.1)
+        default:
+            return .secondary.opacity(0.1)
+        }
+    }
+
+    private var textColor: Color {
         switch days {
         case ..<0:
             return .red
         case 0:
             return .orange
         case 1...3:
-            return .yellow
+            return .yellow.opacity(0.8)
         default:
             return .secondary
         }
+    }
+
+    private var strokeColor: Color {
+        switch days {
+        case ..<0:
+            return .red.opacity(0.3)
+        case 0:
+            return .orange.opacity(0.3)
+        case 1...3:
+            return .yellow.opacity(0.3)
+        default:
+            return .secondary.opacity(0.2)
+        }
+    }
+}
+
+struct CompletedBadge: View {
+    var body: some View {
+        Image(systemName: "checkmark.circle.fill")
+            .font(.system(.caption, weight: .medium))
+            .foregroundStyle(.green)
+            .background(Circle().fill(.green.opacity(0.1)).scaleEffect(1.5))
     }
 }
