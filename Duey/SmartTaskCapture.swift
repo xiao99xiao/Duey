@@ -72,6 +72,22 @@ class SmartTaskCapture: ObservableObject {
         pasteboardAnalyzer.analyzeClipboard()
     }
 
+    func analyzeText(_ text: String) {
+        guard isEnabled else {
+            showMessage("Smart Task Capture is disabled")
+            return
+        }
+
+        guard !apiKey.isEmpty else {
+            showMessage("OpenAI API key not configured")
+            return
+        }
+
+        _Concurrency.Task { @MainActor in
+            await processClipboardText(text)
+        }
+    }
+
     private func showMessage(_ message: String) {
         lastResultMessage = message
         showResultMessage = true

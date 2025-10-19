@@ -132,6 +132,13 @@ struct ContentView: View {
         .onAppear {
             smartTaskCapture.configure(modelContext: modelContext, appSettings: appSettings)
 
+            // Configure contextual menu service
+            TextAnalysisService.shared.configure(
+                modelContainer: modelContext.container,
+                appSettings: appSettings,
+                smartTaskCapture: smartTaskCapture
+            )
+
             // Set up global keyboard shortcut
             KeyboardShortcuts.onKeyUp(for: .smartTaskCapture) {
                 smartTaskCapture.analyzeClipboard()
