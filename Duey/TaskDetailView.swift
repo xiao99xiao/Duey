@@ -119,6 +119,7 @@ struct TaskHeaderView: View {
                         )
                         .datePickerStyle(.graphical)
                         .labelsHidden()
+                        .padding()
                     }
 
                     Button(action: { showingTimePicker.toggle() }) {
@@ -174,6 +175,7 @@ struct TaskHeaderView: View {
                         )
                         .datePickerStyle(.compact)
                         .labelsHidden()
+                        .padding()
                     }
                 }
 
