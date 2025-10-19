@@ -11,22 +11,10 @@ import HighlightedTextEditor
 
 struct MarkdownEditorView: View {
     @Bindable var task: Task
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Notes")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(NSColor.controlBackgroundColor))
-
-            Divider()
-
+            
             HighlightedTextEditor(
                 text: Binding(
                     get: { task.content ?? "" },
@@ -34,11 +22,12 @@ struct MarkdownEditorView: View {
                 ),
                 highlightRules: .markdown
             )
+            .introspect { editor in
+                editor.textView.backgroundColor = .clear
+            }
             .font(.system(.body, design: .monospaced))
-            .scrollContentBackground(.hidden)
             .padding(12)
         }
-        .background(Color(NSColor.textBackgroundColor))
     }
 }
 
