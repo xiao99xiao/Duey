@@ -81,18 +81,31 @@ struct TaskProvider: TimelineProvider {
             let context = ModelContext(container)
 
             let descriptor = FetchDescriptor<Task>(
-                predicate: #Predicate { !$0.isCompleted },
-                sortBy: [
-                    SortDescriptor(\.deadline, order: .forward),
-                    SortDescriptor(\.createdAt, order: .reverse)
-                ]
+                predicate: #Predicate { !$0.isCompleted }
             )
 
             let tasks = try context.fetch(descriptor)
             print("Widget: Found \(tasks.count) unfinished tasks")
 
-            // Convert to TaskInfo and limit to first 8 tasks for widget display
-            return tasks.prefix(8).map { task in
+            // Sort tasks the same way as the sidebar
+            let sortedTasks = tasks.sorted { (task1, task2) in
+                if let deadline1 = task1.deadline, let deadline2 = task2.deadline {
+                    // Both have deadlines: earlier deadline first
+                    return deadline1 < deadline2
+                } else if task1.deadline != nil {
+                    // Only task1 has deadline: it comes first
+                    return true
+                } else if task2.deadline != nil {
+                    // Only task2 has deadline: it comes first
+                    return false
+                } else {
+                    // Neither has deadline: newer tasks first
+                    return task1.createdAt > task2.createdAt
+                }
+            }
+
+            // Convert to TaskInfo
+            return sortedTasks.map { task in
                 TaskInfo(
                     title: task.title.isEmpty ? "Untitled Task" : task.title,
                     daysUntilDeadline: task.daysUntilDeadline
