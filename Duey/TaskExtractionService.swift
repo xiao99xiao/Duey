@@ -67,8 +67,24 @@ class TaskExtractionService {
         }
 
         let prompt = createPrompt(for: text, outputLanguage: outputLanguage, useRichContent: useRichContent)
+
+        // Log the actual prompt being sent to OpenAI
+        print("TaskExtractionService: === PROMPT DEBUG ===")
+        print("TaskExtractionService: Output Language Setting: \(outputLanguage)")
+        print("TaskExtractionService: Use Rich Content: \(useRichContent)")
+        print("TaskExtractionService: Input Text: \(text)")
+        print("TaskExtractionService: System Prompt:")
+        print("---")
+        print(prompt.system)
+        print("---")
+        print("TaskExtractionService: User Prompt:")
+        print("---")
+        print(prompt.user)
+        print("---")
+        print("TaskExtractionService: === END PROMPT DEBUG ===")
+
         let request = OpenAIRequest(
-            model: "gpt-3.5-turbo",
+            model: "gpt-4o-mini",
             messages: [
                 OpenAIMessage(role: "system", content: prompt.system),
                 OpenAIMessage(role: "user", content: prompt.user)
