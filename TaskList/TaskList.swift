@@ -50,25 +50,25 @@ struct TaskProvider: TimelineProvider {
 
     private func fetchUnfinishedTasks() async -> [TaskInfo] {
         do {
-            // Try with group container first
+            // Use CloudKit configuration to access same data as main app
             let schema = Schema([Task.self])
             var modelContainer: ModelContainer?
 
-            // First attempt: with group container
+            // First attempt: with CloudKit (same as main app)
             do {
                 let modelConfiguration = ModelConfiguration(
                     schema: schema,
                     isStoredInMemoryOnly: false,
-                    groupContainer: .identifier("group.com.xiao99xiao.Duey")
+                    cloudKitDatabase: .automatic
                 )
                 modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
-                print("Widget: Successfully created ModelContainer with group container")
+                print("Widget: Successfully created CloudKit ModelContainer")
             } catch {
-                print("Widget: Group container failed (\(error)), trying basic configuration")
-                // Fallback: basic configuration
+                print("Widget: CloudKit failed (\(error)), trying local configuration")
+                // Fallback: local configuration
                 let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
                 modelContainer = try ModelContainer(for: schema, configurations: [fallbackConfiguration])
-                print("Widget: Successfully created ModelContainer with basic configuration")
+                print("Widget: Successfully created local ModelContainer")
             }
 
             guard let container = modelContainer else {

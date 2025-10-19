@@ -21,14 +21,14 @@ struct DueyApp: App {
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
-            groupContainer: .identifier("group.com.xiao99xiao.Duey")
+            cloudKitDatabase: .automatic
         )
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            print("ModelContainer creation failed: \(error)")
-            // Fallback to a basic configuration without group container
+            print("CloudKit ModelContainer creation failed: \(error)")
+            // Fallback to local-only configuration
             let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             do {
                 return try ModelContainer(for: schema, configurations: [fallbackConfiguration])

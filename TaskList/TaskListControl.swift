@@ -39,26 +39,26 @@ extension TaskListControl {
         }
 
         func currentValue() async throws -> Int {
-            // Return the number of unfinished tasks
+            // Return the number of unfinished tasks using CloudKit
             do {
                 let schema = Schema([Task.self])
                 var modelContainer: ModelContainer?
 
-                // First attempt: with group container
+                // First attempt: with CloudKit (same as main app)
                 do {
                     let modelConfiguration = ModelConfiguration(
                         schema: schema,
                         isStoredInMemoryOnly: false,
-                        groupContainer: .identifier("group.com.xiao99xiao.Duey")
+                        cloudKitDatabase: .automatic
                     )
                     modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
-                    print("Control Widget: Successfully created ModelContainer with group container")
+                    print("Control Widget: Successfully created CloudKit ModelContainer")
                 } catch {
-                    print("Control Widget: Group container failed (\(error)), trying basic configuration")
-                    // Fallback: basic configuration
+                    print("Control Widget: CloudKit failed (\(error)), trying local configuration")
+                    // Fallback: local configuration
                     let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
                     modelContainer = try ModelContainer(for: schema, configurations: [fallbackConfiguration])
-                    print("Control Widget: Successfully created ModelContainer with basic configuration")
+                    print("Control Widget: Successfully created local ModelContainer")
                 }
 
                 guard let container = modelContainer else {
