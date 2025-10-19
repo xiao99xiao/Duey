@@ -60,17 +60,13 @@ struct TaskRowView: View {
     let task: Task
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(task.title.isEmpty ? "Untitled Task" : task.title)
-                    .font(.system(.body, design: .default, weight: .medium))
-                    .lineLimit(1)
-                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                    .strikethrough(task.isCompleted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Spacer(minLength: 8)
+        HStack(spacing: 8) {
+            Text(task.title.isEmpty ? "Untitled Task" : task.title)
+                .font(.system(.body, design: .default, weight: .medium))
+                .lineLimit(1)
+                .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                .strikethrough(task.isCompleted)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if let days = task.daysUntilDeadline {
                 DeadlineBadge(days: days)
