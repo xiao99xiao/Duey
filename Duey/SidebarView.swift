@@ -16,11 +16,18 @@ struct SidebarView: View {
 
     var body: some View {
         List(selection: $selectedTask) {
-            ForEach(tasks) { task in
+            ForEach(tasks, id: \.id) { task in
                 TaskRowView(task: task)
                     .tag(task)
             }
             .onDelete(perform: deleteTask)
+        }
+        .deleteDisabled(false)
+        .onDeleteCommand {
+            if let selectedTask = selectedTask,
+               let index = tasks.firstIndex(where: { $0.id == selectedTask.id }) {
+                deleteTask(at: IndexSet(integer: index))
+            }
         }
         .navigationTitle("Tasks")
         .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: 400)
@@ -42,15 +49,33 @@ struct SidebarView: View {
 
     private func deleteTask(at offsets: IndexSet) {
         withAnimation {
+            var newSelectedTask: Task? = nil
+
             for index in offsets {
                 let task = tasks[index]
                 if task.id == pendingNewTask?.id {
                     pendingNewTask = nil
                 }
                 if task.id == selectedTask?.id {
-                    selectedTask = nil
+                    // Find next task to select
+                    if index < tasks.count - 1 {
+                        // Select task below (next in list)
+                        newSelectedTask = tasks[index + 1]
+                    } else if index > 0 {
+                        // If deleting last task, select task above
+                        newSelectedTask = tasks[index - 1]
+                    }
+                    // If only one task, newSelectedTask stays nil
                 }
                 modelContext.delete(task)
+            }
+
+            selectedTask = newSelectedTask
+
+            do {
+                try modelContext.save()
+            } catch {
+                print("Failed to save after delete: \(error)")
             }
         }
     }
