@@ -10,55 +10,6 @@ import SwiftUI
 import SwiftData
 import Foundation
 
-// Task model for widget (matches main app Task model)
-@Model
-final class Task {
-    var title: String
-    var content: String?
-    var deadline: Date?
-    var isCompleted: Bool
-    var createdAt: Date
-    var completedAt: Date?
-
-    init(
-        title: String = "",
-        content: String? = nil,
-        deadline: Date? = nil,
-        isCompleted: Bool = false
-    ) {
-        self.title = title
-        self.content = content
-        self.deadline = deadline
-        self.isCompleted = isCompleted
-        self.createdAt = Date()
-        self.completedAt = nil
-    }
-
-    init(
-        title: String,
-        content: String?,
-        deadline: Date?,
-        isCompleted: Bool,
-        createdAt: Date,
-        completedAt: Date?
-    ) {
-        self.title = title
-        self.content = content
-        self.deadline = deadline
-        self.isCompleted = isCompleted
-        self.createdAt = createdAt
-        self.completedAt = completedAt
-    }
-
-    var daysUntilDeadline: Int? {
-        guard let deadline = deadline else { return nil }
-        let calendar = Calendar.current
-        let now = Date()
-        let components = calendar.dateComponents([.day], from: now, to: deadline)
-        return components.day
-    }
-}
-
 struct TaskProvider: TimelineProvider {
     typealias Entry = TaskEntry
 

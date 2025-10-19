@@ -75,27 +75,3 @@ struct OpenDueyAppIntent: AppIntent {
     }
 }
 
-// Task model for control widget (matches main app Task model)
-@Model
-final class Task {
-    var title: String
-    var content: String?
-    var deadline: Date?
-    var isCompleted: Bool
-    var createdAt: Date
-    var completedAt: Date?
-
-    init(
-        title: String = "",
-        content: String? = nil,
-        deadline: Date? = nil,
-        isCompleted: Bool = false
-    ) {
-        self.title = title
-        self.content = content
-        self.deadline = deadline
-        self.isCompleted = isCompleted
-        self.createdAt = Date()
-        self.completedAt = nil
-    }
-}

@@ -54,6 +54,13 @@
 			);
 			target = 88D86AB02EA53853008C06D2 /* TaskListExtension */;
 		};
+		88D86ACA2EA54CDA008C06D2 /* Exceptions for "Duey" folder in "TaskListExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Task.swift,
+			);
+			target = 88D86AB02EA53853008C06D2 /* TaskListExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -67,6 +74,9 @@
 		};
 		88EABF612EA4CA7B00D61873 /* Duey */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				88D86ACA2EA54CDA008C06D2 /* Exceptions for "Duey" folder in "TaskListExtension" target */,
+			);
 			path = Duey;
 			sourceTree = "<group>";
 		};
