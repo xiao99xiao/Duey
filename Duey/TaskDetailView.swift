@@ -77,12 +77,7 @@ struct TaskHeaderView: View {
 
             VStack(alignment: .trailing, spacing: 8) {
                 HStack(spacing: 8) {
-                    Button(action: {
-                        showingDatePicker.toggle()
-                        if showingDatePicker {
-                            showingTimePicker = false
-                        }
-                    }) {
+                    Button(action: { showingDatePicker.toggle() }) {
                         HStack(spacing: 4) {
                             Image(systemName: "calendar")
                                 .font(.caption)
@@ -94,13 +89,39 @@ struct TaskHeaderView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .help("Set date")
+                    .popover(isPresented: $showingDatePicker) {
+                        DatePicker(
+                            "Date",
+                            selection: Binding(
+                                get: { task.deadline ?? Date() },
+                                set: { newDate in
+                                    if let existingDeadline = task.deadline {
+                                        // Preserve time, update date
+                                        let calendar = Calendar.current
+                                        let timeComponents = calendar.dateComponents([.hour, .minute], from: existingDeadline)
+                                        let dateComponents = calendar.dateComponents([.year, .month, .day], from: newDate)
 
-                    Button(action: {
-                        showingTimePicker.toggle()
-                        if showingTimePicker {
-                            showingDatePicker = false
-                        }
-                    }) {
+                                        var combined = DateComponents()
+                                        combined.year = dateComponents.year
+                                        combined.month = dateComponents.month
+                                        combined.day = dateComponents.day
+                                        combined.hour = timeComponents.hour
+                                        combined.minute = timeComponents.minute
+
+                                        task.deadline = calendar.date(from: combined)
+                                    } else {
+                                        // Set new date with default time (18:00)
+                                        task.deadline = Task.defaultDeadlineTime(for: newDate)
+                                    }
+                                }
+                            ),
+                            displayedComponents: [.date]
+                        )
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+                    }
+
+                    Button(action: { showingTimePicker.toggle() }) {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
                                 .font(.caption)
@@ -112,81 +133,48 @@ struct TaskHeaderView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .help("Set time")
-                }
+                    .popover(isPresented: $showingTimePicker) {
+                        DatePicker(
+                            "Time",
+                            selection: Binding(
+                                get: { task.deadline ?? Task.defaultDeadlineTime(for: Date()) },
+                                set: { newTime in
+                                    if let existingDeadline = task.deadline {
+                                        // Preserve date, update time
+                                        let calendar = Calendar.current
+                                        let dateComponents = calendar.dateComponents([.year, .month, .day], from: existingDeadline)
+                                        let timeComponents = calendar.dateComponents([.hour, .minute], from: newTime)
 
-                if showingDatePicker {
-                    DatePicker(
-                        "Date",
-                        selection: Binding(
-                            get: { task.deadline ?? Date() },
-                            set: { newDate in
-                                if let existingDeadline = task.deadline {
-                                    // Preserve time, update date
-                                    let calendar = Calendar.current
-                                    let timeComponents = calendar.dateComponents([.hour, .minute], from: existingDeadline)
-                                    let dateComponents = calendar.dateComponents([.year, .month, .day], from: newDate)
+                                        var combined = DateComponents()
+                                        combined.year = dateComponents.year
+                                        combined.month = dateComponents.month
+                                        combined.day = dateComponents.day
+                                        combined.hour = timeComponents.hour
+                                        combined.minute = timeComponents.minute
 
-                                    var combined = DateComponents()
-                                    combined.year = dateComponents.year
-                                    combined.month = dateComponents.month
-                                    combined.day = dateComponents.day
-                                    combined.hour = timeComponents.hour
-                                    combined.minute = timeComponents.minute
+                                        task.deadline = calendar.date(from: combined)
+                                    } else {
+                                        // Set today's date with selected time
+                                        let calendar = Calendar.current
+                                        let todayComponents = calendar.dateComponents([.year, .month, .day], from: Date())
+                                        let timeComponents = calendar.dateComponents([.hour, .minute], from: newTime)
 
-                                    task.deadline = calendar.date(from: combined)
-                                } else {
-                                    // Set new date with default time (18:00)
-                                    task.deadline = Task.defaultDeadlineTime(for: newDate)
+                                        var combined = DateComponents()
+                                        combined.year = todayComponents.year
+                                        combined.month = todayComponents.month
+                                        combined.day = todayComponents.day
+                                        combined.hour = timeComponents.hour
+                                        combined.minute = timeComponents.minute
+
+                                        task.deadline = calendar.date(from: combined)
+                                    }
                                 }
-                            }
-                        ),
-                        displayedComponents: [.date]
-                    )
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
-                }
-
-                if showingTimePicker {
-                    DatePicker(
-                        "Time",
-                        selection: Binding(
-                            get: { task.deadline ?? Task.defaultDeadlineTime(for: Date()) },
-                            set: { newTime in
-                                if let existingDeadline = task.deadline {
-                                    // Preserve date, update time
-                                    let calendar = Calendar.current
-                                    let dateComponents = calendar.dateComponents([.year, .month, .day], from: existingDeadline)
-                                    let timeComponents = calendar.dateComponents([.hour, .minute], from: newTime)
-
-                                    var combined = DateComponents()
-                                    combined.year = dateComponents.year
-                                    combined.month = dateComponents.month
-                                    combined.day = dateComponents.day
-                                    combined.hour = timeComponents.hour
-                                    combined.minute = timeComponents.minute
-
-                                    task.deadline = calendar.date(from: combined)
-                                } else {
-                                    // Set today's date with selected time
-                                    let calendar = Calendar.current
-                                    let todayComponents = calendar.dateComponents([.year, .month, .day], from: Date())
-                                    let timeComponents = calendar.dateComponents([.hour, .minute], from: newTime)
-
-                                    var combined = DateComponents()
-                                    combined.year = todayComponents.year
-                                    combined.month = todayComponents.month
-                                    combined.day = todayComponents.day
-                                    combined.hour = timeComponents.hour
-                                    combined.minute = timeComponents.minute
-
-                                    task.deadline = calendar.date(from: combined)
-                                }
-                            }
-                        ),
-                        displayedComponents: [.hourAndMinute]
-                    )
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
+                            ),
+                            displayedComponents: [.hourAndMinute]
+                        )
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                    }
                 }
 
                 if task.deadline != nil {
