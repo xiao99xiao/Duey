@@ -17,9 +17,11 @@ struct TaskProvider: TimelineProvider {
         TaskEntry(
             date: Date(),
             tasks: [
-                TaskInfo(title: "Sample Task", daysUntilDeadline: 2),
-                TaskInfo(title: "Another Task", daysUntilDeadline: 0),
-                TaskInfo(title: "Future Task", daysUntilDeadline: 7)
+                TaskInfo(title: "Review project proposal", daysUntilDeadline: 2),
+                TaskInfo(title: "Team meeting preparation", daysUntilDeadline: 0),
+                TaskInfo(title: "Submit quarterly report", daysUntilDeadline: 7),
+                TaskInfo(title: "Schedule dentist appointment", daysUntilDeadline: nil),
+                TaskInfo(title: "Update website content", daysUntilDeadline: 5)
             ]
         )
     }
@@ -28,9 +30,10 @@ struct TaskProvider: TimelineProvider {
         let entry = TaskEntry(
             date: Date(),
             tasks: [
-                TaskInfo(title: "Call dentist", daysUntilDeadline: 1),
-                TaskInfo(title: "Buy groceries", daysUntilDeadline: 0),
-                TaskInfo(title: "Meeting prep", daysUntilDeadline: 3)
+                TaskInfo(title: "Call dentist for appointment", daysUntilDeadline: 1),
+                TaskInfo(title: "Buy groceries for dinner", daysUntilDeadline: 0),
+                TaskInfo(title: "Prepare presentation slides", daysUntilDeadline: 3),
+                TaskInfo(title: "Review code changes", daysUntilDeadline: nil)
             ]
         )
         completion(entry)
@@ -118,24 +121,6 @@ struct TaskListEntryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Header
-            HStack {
-                Image(systemName: "checklist")
-                    .font(.system(.headline, weight: .semibold))
-                    .foregroundStyle(.blue)
-
-                Text("Tasks")
-                    .font(.system(.headline, weight: .semibold))
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                Text("\(entry.tasks.count)")
-                    .font(.system(.caption, weight: .medium))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.bottom, 4)
-
             if entry.tasks.isEmpty {
                 Spacer()
                 HStack {
@@ -145,29 +130,40 @@ struct TaskListEntryView: View {
                             .font(.system(.title2))
                             .foregroundStyle(.green)
                         Text("All done!")
-                            .font(.system(.subheadline, weight: .medium))
+                            .font(.system(.body, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
                 Spacer()
             } else {
-                // Task list
-                VStack(spacing: 3) {
+                // Task list only
+                VStack(spacing: 4) {
                     ForEach(Array(displayedTasks.enumerated()), id: \.offset) { index, task in
                         TaskWidgetRow(task: task)
                     }
                 }
+                Spacer()
             }
-
-            Spacer()
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var displayedTasks: [TaskInfo] {
-        let maxTasks = family == .systemSmall ? 3 : 8
+        let maxTasks: Int
+        switch family {
+        case .systemSmall:
+            maxTasks = 3
+        case .systemMedium:
+            maxTasks = 6
+        case .systemLarge:
+            maxTasks = 12
+        case .systemExtraLarge:
+            maxTasks = 20
+        default:
+            maxTasks = 6
+        }
         return Array(entry.tasks.prefix(maxTasks))
     }
 }
@@ -176,13 +172,13 @@ struct TaskWidgetRow: View {
     let task: TaskInfo
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Circle()
-                .fill(.secondary.opacity(0.3))
+                .fill(.secondary.opacity(0.4))
                 .frame(width: 6, height: 6)
 
             Text(task.title)
-                .font(.system(.caption, weight: .medium))
+                .font(.system(.body, weight: .medium))
                 .lineLimit(1)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -200,12 +196,12 @@ struct DeadlineBadge: View {
 
     var body: some View {
         Text(badgeText)
-            .font(.system(.caption2, design: .rounded, weight: .semibold))
+            .font(.system(.caption, design: .rounded, weight: .semibold))
             .foregroundStyle(textColor)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 2)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
             .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private var badgeText: String {
@@ -264,6 +260,6 @@ struct TaskList: Widget {
         }
         .configurationDisplayName("Task List")
         .description("Shows your unfinished tasks with deadlines.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
     }
 }
