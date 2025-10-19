@@ -7,10 +7,10 @@
 
 import SwiftUI
 import SwiftData
+import KeyboardShortcuts
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.openSettings) private var openSettings
     @Query private var tasks: [Task]
     @State private var selectedTask: Task?
     @State private var pendingNewTask: Task?
@@ -70,15 +70,8 @@ struct ContentView: View {
                     }) {
                         Label("Analyze Clipboard", systemImage: "clipboard.fill")
                     }
-                    .help("Test Smart Task Capture (⌘⇧T)")
+                    .help("Test Smart Task Capture (\(KeyboardShortcuts.getShortcut(for: .smartTaskCapture)?.description ?? "⌘⇧T"))")
                     .disabled(!appSettings.smartCaptureEnabled || appSettings.smartCaptureAPIKey.isEmpty)
-
-                    Button(action: {
-                        openSettings()
-                    }) {
-                        Label("Preferences", systemImage: "gearshape")
-                    }
-                    .help("Open Preferences (⌘,)")
                 }
             }
         } detail: {
@@ -136,16 +129,13 @@ struct ContentView: View {
                 )
             }
         }
-        .background(
-            // Global keyboard shortcut for Smart Task Capture
-            Button("") {
-                smartTaskCapture.analyzeClipboard()
-            }
-            .keyboardShortcut("t", modifiers: [.command, .shift])
-            .hidden()
-        )
         .onAppear {
             smartTaskCapture.configure(modelContext: modelContext, appSettings: appSettings)
+
+            // Set up global keyboard shortcut
+            KeyboardShortcuts.onKeyUp(for: .smartTaskCapture) {
+                smartTaskCapture.analyzeClipboard()
+            }
         }
         .onChange(of: selectedTask) { oldTask, newTask in
             handleTaskSelectionChange(from: oldTask, to: newTask)

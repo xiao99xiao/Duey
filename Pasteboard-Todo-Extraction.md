@@ -6,7 +6,7 @@ Intelligent monitoring of the system pasteboard to detect and extract potential 
 ## Feature Description
 
 ### Core Functionality
-- **On-Demand Clipboard Analysis**: Press ⌘⇧T to analyze current clipboard content
+- **On-Demand Clipboard Analysis**: Press the global hotkey (default ⌘⇧T, customizable in preferences) to analyze current clipboard content
 - **AI-Powered Analysis**: Use OpenAI API to analyze copied text for task potential
 - **Smart Task Extraction**: Extract title, deadline, and detailed content from natural language
 - **Non-Intrusive Notification**: Show dialog overlay regardless of app focus state
@@ -14,7 +14,7 @@ Intelligent monitoring of the system pasteboard to detect and extract potential 
 
 ### User Experience Flow
 1. User copies text anywhere in the system (email, webpage, document, etc.)
-2. User presses ⌘⇧T when ready to analyze the clipboard
+2. User presses the global hotkey (default ⌘⇧T) when ready to analyze the clipboard
 3. If text contains task-like content, AI extracts structured information
 4. Dialog appears over the app window asking "Add this task?"
 5. User can review, modify, or decline the suggestion
@@ -24,7 +24,7 @@ Intelligent monitoring of the system pasteboard to detect and extract potential 
 
 ### Clipboard Analysis
 - **Technology**: NSPasteboard on-demand reading via keyboard shortcut
-- **Trigger**: Global keyboard shortcut (⌘⇧T)
+- **Trigger**: Global keyboard shortcut (default ⌘⇧T, customizable in preferences)
 - **Content Types**: Plain text content only (exclude images, files, etc.)
 - **Privacy**: Only process text when user explicitly requests analysis
 

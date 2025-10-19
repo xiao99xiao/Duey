@@ -6,7 +6,7 @@
 - [ ] Open the app and navigate to Smart Capture Settings
 - [ ] Configure OpenAI API key (requires valid key for full testing)
 - [ ] Enable Smart Task Capture feature
-- [ ] Note the keyboard shortcut: ⌘⇧T
+- [ ] Note the global hotkey (default ⌘⇧T, customizable in preferences)
 
 ### 2. **Privacy Protection Tests**
 Copy these texts and verify they are **NOT** processed:
@@ -43,7 +43,7 @@ john.doe@example.com
 ```
 
 ### 3. **Task Detection Tests**
-Copy these texts, then press **⌘⇧T** and verify they **ARE** processed:
+Copy these texts, then press the **global hotkey** (default ⌘⇧T) and verify they **ARE** processed:
 
 #### Simple Tasks
 ```
@@ -118,7 +118,7 @@ When task dialogs appear:
 #### Global Shortcut Operation
 - [ ] Switch to other apps (browser, email, etc.)
 - [ ] Copy task-like content from other apps
-- [ ] Press ⌘⇧T and verify dialog appears over current application
+- [ ] Press the global hotkey and verify dialog appears over current application
 
 ### 7. **Error Handling Tests**
 
@@ -165,7 +165,7 @@ When task dialogs appear:
 ### No Suggestions Appearing
 1. Check if feature is enabled in settings
 2. Verify API key is configured
-3. Make sure you're pressing ⌘⇧T after copying text
+3. Make sure you're pressing the global hotkey after copying text
 4. Check confidence threshold (try lowering it)
 5. Look at console logs for error messages
 6. Ensure copied text meets minimum length requirements

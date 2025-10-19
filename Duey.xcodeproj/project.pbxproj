@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86A8D2EA4D94F008C06D2 /* MarkdownUI */; };
 		88D86A912EA4D95F008C06D2 /* HighlightedTextEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */; };
+		88D86AA42EA532CF008C06D2 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			files = (
 				88D86A912EA4D95F008C06D2 /* HighlightedTextEditor in Frameworks */,
 				88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */,
+				88D86AA42EA532CF008C06D2 /* KeyboardShortcuts in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +76,7 @@
 			packageProductDependencies = (
 				88D86A8D2EA4D94F008C06D2 /* MarkdownUI */,
 				88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */,
+				88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */,
 			);
 			productName = Duey;
 			productReference = 88EABF5F2EA4CA7B00D61873 /* Duey.app */;
@@ -106,6 +109,7 @@
 			packageReferences = (
 				88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */,
+				88D86AA22EA532CF008C06D2 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 88EABF602EA4CA7B00D61873 /* Products */;
@@ -382,6 +386,14 @@
 				minimumVersion = 2.1.2;
 			};
 		};
+		88D86AA22EA532CF008C06D2 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -394,6 +406,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */;
 			productName = HighlightedTextEditor;
+		};
+		88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 88D86AA22EA532CF008C06D2 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

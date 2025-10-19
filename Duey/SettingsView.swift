@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import KeyboardShortcuts
 
 struct SettingsView: View {
     @StateObject private var appSettings = AppSettings()
@@ -67,7 +68,7 @@ struct SmartTaskCaptureSettingsTab: View {
                             .fontWeight(.semibold)
                     }
 
-                    Text("Press ⌘⇧T to analyze clipboard content for potential tasks")
+                    Text("Press \(KeyboardShortcuts.getShortcut(for: .smartTaskCapture)?.description ?? "⌘⇧T") to analyze clipboard content for potential tasks")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -83,7 +84,7 @@ struct SmartTaskCaptureSettingsTab: View {
                     }
 
                 if appSettings.smartCaptureEnabled {
-                    Label("Press ⌘⇧T to analyze clipboard content", systemImage: "keyboard")
+                    Label("Press \(KeyboardShortcuts.getShortcut(for: .smartTaskCapture)?.description ?? "⌘⇧T") to analyze clipboard content", systemImage: "keyboard")
                         .font(.caption)
                         .foregroundStyle(.green)
                 } else {
@@ -209,6 +210,19 @@ struct SmartTaskCaptureSettingsTab: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Global Hotkey") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Smart Task Capture Hotkey")
+                        .font(.subheadline)
+
+                    KeyboardShortcuts.Recorder(for: .smartTaskCapture)
+
+                    Text("Global keyboard shortcut to analyze clipboard content from any application")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
         }
         .formStyle(.grouped)
         .padding(20)
@@ -237,6 +251,7 @@ struct SmartTaskCaptureSettingsTab: View {
 extension Notification.Name {
     static let smartTaskCaptureSettingsChanged = Notification.Name("smartTaskCaptureSettingsChanged")
 }
+
 
 #Preview {
     SettingsView()

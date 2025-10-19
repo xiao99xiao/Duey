@@ -49,6 +49,7 @@ class AppSettings: ObservableObject {
         }
     }
 
+
     // MARK: - General Settings
 
     @AppStorage("showCompletedTasks")
@@ -65,6 +66,7 @@ class AppSettings: ObservableObject {
             updateStartAtLogin()
         }
     }
+
 
     // MARK: - Login Item Management
 
