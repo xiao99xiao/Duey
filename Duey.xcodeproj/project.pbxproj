@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86A8D2EA4D94F008C06D2 /* MarkdownUI */; };
+		88D86A912EA4D95F008C06D2 /* HighlightedTextEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		88EABF5F2EA4CA7B00D61873 /* Duey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Duey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				88D86A912EA4D95F008C06D2 /* HighlightedTextEditor in Frameworks */,
+				88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = Duey;
 			packageProductDependencies = (
+				88D86A8D2EA4D94F008C06D2 /* MarkdownUI */,
+				88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */,
 			);
 			productName = Duey;
 			productReference = 88EABF5F2EA4CA7B00D61873 /* Duey.app */;
@@ -94,6 +103,10 @@
 			);
 			mainGroup = 88EABF562EA4CA7B00D61873;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 88EABF602EA4CA7B00D61873 /* Products */;
 			projectDirPath = "";
@@ -331,6 +344,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.1;
+			};
+		};
+		88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kyle-n/HighlightedTextEditor";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		88D86A8D2EA4D94F008C06D2 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
+		88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */;
+			productName = HighlightedTextEditor;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 88EABF572EA4CA7B00D61873 /* Project object */;
 }
