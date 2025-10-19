@@ -11,13 +11,14 @@ import KeyboardShortcuts
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var smartTaskCapture: SmartTaskCapture
+
     @Query private var tasks: [Task]
     @State private var selectedTask: Task?
     @State private var pendingNewTask: Task?
     @State private var deletedTaskBackup: Task?
     @State private var showDeleteToast = false
-    @StateObject private var appSettings = AppSettings()
-    @StateObject private var smartTaskCapture = SmartTaskCapture()
 
     var sortedTasks: [Task] {
         let unfinishedTasks = tasks.filter { !$0.isCompleted }
@@ -108,29 +109,11 @@ struct ContentView: View {
                 }
             }
         )
-        .overlay {
-            // Smart Task Capture suggestion dialog
-            if smartTaskCapture.showSuggestionDialog,
-               let suggestion = smartTaskCapture.currentSuggestion {
-                TaskSuggestionOverlay(
-                    isPresented: $smartTaskCapture.showSuggestionDialog,
-                    suggestion: suggestion,
-                    originalText: smartTaskCapture.currentOriginalText,
-                    onAccept: { title, content, deadline in
-                        smartTaskCapture.acceptSuggestion(title: title, content: content, deadline: deadline)
-                        // Select the newly created task
-                        if let newTask = tasks.first(where: { $0.title == title }) {
-                            selectedTask = newTask
-                        }
-                    },
-                    onDecline: {
-                        smartTaskCapture.declineSuggestion()
-                    }
-                )
-            }
-        }
         .onAppear {
-            smartTaskCapture.configure(modelContext: modelContext, appSettings: appSettings)
+            smartTaskCapture.configure(
+                modelContext: modelContext,
+                appSettings: appSettings
+            )
 
             // Configure contextual menu service
             TextAnalysisService.shared.configure(

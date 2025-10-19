@@ -10,6 +10,10 @@ import SwiftData
 
 @main
 struct DueyApp: App {
+    @StateObject private var smartTaskCapture = SmartTaskCapture()
+    @StateObject private var appSettings = AppSettings()
+    @Environment(\.openWindow) private var openWindow
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Task.self,
@@ -30,7 +34,28 @@ struct DueyApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(smartTaskCapture)
+                .environmentObject(appSettings)
+                .onReceive(smartTaskCapture.$shouldShowWindow) { shouldShow in
+                    if shouldShow, smartTaskCapture.currentSuggestion != nil {
+                        openWindow(id: "task-suggestion")
+                    }
+                }
         }
+        .modelContainer(sharedModelContainer)
+
+        WindowGroup("Task Suggestion", id: "task-suggestion") {
+            if let suggestion = smartTaskCapture.currentSuggestion {
+                TaskSuggestionWindow(
+                    suggestion: suggestion,
+                    originalText: smartTaskCapture.currentOriginalText,
+                    smartTaskCapture: smartTaskCapture
+                )
+                .environmentObject(appSettings)
+            }
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
         .modelContainer(sharedModelContainer)
 
         Settings {

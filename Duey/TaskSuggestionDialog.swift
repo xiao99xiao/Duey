@@ -157,10 +157,8 @@ struct TaskSuggestionDialog: View {
             }
         }
         .padding(24)
-        .frame(width: 400)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
         .onAppear {
             setupInitialValues()
         }
@@ -180,41 +178,40 @@ struct TaskSuggestionDialog: View {
     }
 }
 
-struct TaskSuggestionOverlay: View {
-    @Binding var isPresented: Bool
+struct TaskSuggestionWindow: View {
     let suggestion: TaskExtractionResponse
     let originalText: String
-    let onAccept: (String, String?, Date?) -> Void
-    let onDecline: () -> Void
+    let smartTaskCapture: SmartTaskCapture
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
-        ZStack {
-            // Background overlay
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isPresented = false
-                    }
-                    onDecline()
-                }
-
-            // Dialog
-            TaskSuggestionDialog(
-                suggestion: suggestion,
-                originalText: originalText,
-                isPresented: $isPresented,
-                onAccept: onAccept,
-                onDecline: onDecline
-            )
-            .transition(.scale(scale: 0.8).combined(with: .opacity))
+        TaskSuggestionDialog(
+            suggestion: suggestion,
+            originalText: originalText,
+            isPresented: .constant(true),
+            onAccept: { title, content, deadline in
+                smartTaskCapture.acceptSuggestion(title: title, content: content, deadline: deadline)
+                dismissWindow(id: "task-suggestion")
+            },
+            onDecline: {
+                smartTaskCapture.declineSuggestion()
+                dismissWindow(id: "task-suggestion")
+            }
+        )
+        .frame(width: 400)
+        .background(Color.clear)
+        .onAppear {
+            // Bring app to front when task suggestion window appears
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 }
 
 #Preview {
-    TaskSuggestionOverlay(
-        isPresented: .constant(true),
+    TaskSuggestionDialog(
         suggestion: TaskExtractionResponse(
             isTask: true,
             confidence: 0.85,
@@ -223,6 +220,7 @@ struct TaskSuggestionOverlay: View {
             content: "Schedule a cleaning appointment at the dentist office."
         ),
         originalText: "Remember to call the dentist tomorrow at 2pm to schedule cleaning appointment",
+        isPresented: .constant(true),
         onAccept: { _, _, _ in },
         onDecline: { }
     )

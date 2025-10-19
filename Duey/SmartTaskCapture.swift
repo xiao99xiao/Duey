@@ -11,12 +11,12 @@ import Combine
 
 @MainActor
 class SmartTaskCapture: ObservableObject {
-    @Published var showSuggestionDialog = false
     @Published var currentSuggestion: TaskExtractionResponse?
     @Published var currentOriginalText = ""
     @Published var isProcessing = false
     @Published var lastResultMessage = ""
     @Published var showResultMessage = false
+    @Published var shouldShowWindow = false
 
     private let pasteboardAnalyzer = PasteboardAnalyzer()
     private let extractionService = TaskExtractionService()
@@ -53,7 +53,6 @@ class SmartTaskCapture: ObservableObject {
         if !apiKey.isEmpty {
             extractionService.setAPIKey(apiKey)
         }
-
 
         print("SmartTaskCapture: Configured")
     }
@@ -139,10 +138,7 @@ class SmartTaskCapture: ObservableObject {
             print("SmartTaskCapture: Task detected with confidence \(Int(suggestion.confidence * 100))%")
             currentSuggestion = suggestion
             currentOriginalText = text
-
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showSuggestionDialog = true
-            }
+            shouldShowWindow = true
 
         } catch {
             showMessage("AI Analysis failed: \(error.localizedDescription)")
@@ -177,7 +173,7 @@ class SmartTaskCapture: ObservableObject {
     private func clearCurrentSuggestion() {
         currentSuggestion = nil
         currentOriginalText = ""
-        showSuggestionDialog = false
+        shouldShowWindow = false
     }
 
 
