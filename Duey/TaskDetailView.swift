@@ -76,7 +76,7 @@ struct TaskHeaderView: View {
                 .frame(maxWidth: .infinity)
 
             VStack(alignment: .trailing, spacing: 8) {
-                HStack(spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
                     Button(action: { showingDatePicker.toggle() }) {
                         HStack(spacing: 4) {
                             Image(systemName: "calendar")
@@ -88,6 +88,7 @@ struct TaskHeaderView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .frame(height: 24)
                     .help("Set date")
                     .popover(isPresented: $showingDatePicker) {
                         DatePicker(
@@ -134,6 +135,7 @@ struct TaskHeaderView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .frame(height: 24)
                     .help("Set time")
                     .popover(isPresented: $showingTimePicker) {
                         DatePicker(
@@ -191,6 +193,7 @@ struct TaskHeaderView: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
+                        .frame(height: 24)
                         .foregroundStyle(.secondary)
                         .help("Clear deadline")
                     }
