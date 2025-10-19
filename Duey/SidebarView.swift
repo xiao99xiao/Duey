@@ -13,6 +13,7 @@ struct SidebarView: View {
     @Binding var selectedTask: Task?
     @Binding var pendingNewTask: Task?
     let modelContext: ModelContext
+    let onTaskDeleted: (Task) -> Void
 
     var body: some View {
         List(selection: $selectedTask) {
@@ -53,6 +54,10 @@ struct SidebarView: View {
 
             for index in offsets {
                 let task = tasks[index]
+
+                // Call the callback before deletion
+                onTaskDeleted(task)
+
                 if task.id == pendingNewTask?.id {
                     pendingNewTask = nil
                 }

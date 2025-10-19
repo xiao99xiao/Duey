@@ -13,6 +13,8 @@ struct ContentView: View {
     @Query private var tasks: [Task]
     @State private var selectedTask: Task?
     @State private var pendingNewTask: Task?
+    @State private var deletedTaskBackup: Task?
+    @State private var showDeleteToast = false
 
     var sortedTasks: [Task] {
         let unfinishedTasks = tasks.filter { !$0.isCompleted }
@@ -46,7 +48,11 @@ struct ContentView: View {
                 tasks: sortedTasks,
                 selectedTask: $selectedTask,
                 pendingNewTask: $pendingNewTask,
-                modelContext: modelContext
+                modelContext: modelContext,
+                onTaskDeleted: { deletedTask in
+                    deletedTaskBackup = deletedTask
+                    showDeleteToast = true
+                }
             )
         } detail: {
             if let selectedTask = selectedTask {
@@ -56,6 +62,32 @@ struct ContentView: View {
                 EmptyStateView(pendingNewTask: $pendingNewTask)
             }
         }
+        .overlay(alignment: .bottom) {
+            if showDeleteToast, let deletedTask = deletedTaskBackup {
+                DeleteToastView(
+                    taskTitle: deletedTask.title,
+                    onRevert: { revertDeletion() },
+                    onDismiss: {
+                        showDeleteToast = false
+                        deletedTaskBackup = nil
+                    }
+                )
+                .padding(.bottom, 20)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .background(
+            // Only capture Command+Z when there's something to revert
+            Group {
+                if showDeleteToast && deletedTaskBackup != nil {
+                    Button("") {
+                        revertDeletion()
+                    }
+                    .keyboardShortcut("z", modifiers: .command)
+                    .hidden()
+                }
+            }
+        )
         .onChange(of: selectedTask) { oldTask, newTask in
             handleTaskSelectionChange(from: oldTask, to: newTask)
         }
@@ -67,6 +99,35 @@ struct ContentView: View {
            pendingTask.title.isEmpty {
             modelContext.delete(pendingTask)
             pendingNewTask = nil
+        }
+    }
+
+    private func revertDeletion() {
+        guard let deletedTask = deletedTaskBackup else { return }
+
+        withAnimation(.easeInOut(duration: 0.3)) {
+            // Create a new task with the same properties
+            let restoredTask = Task(
+                title: deletedTask.title,
+                content: deletedTask.content,
+                deadline: deletedTask.deadline,
+                isCompleted: deletedTask.isCompleted,
+                createdAt: deletedTask.createdAt,
+                completedAt: deletedTask.completedAt
+            )
+
+            modelContext.insert(restoredTask)
+            selectedTask = restoredTask
+
+            // Clear the backup and hide toast
+            deletedTaskBackup = nil
+            showDeleteToast = false
+
+            do {
+                try modelContext.save()
+            } catch {
+                print("Failed to save restored task: \(error)")
+            }
         }
     }
 }
@@ -92,6 +153,40 @@ struct EmptyStateView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct DeleteToastView: View {
+    let taskTitle: String
+    let onRevert: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text("Deleted task: \"\(taskTitle.isEmpty ? "Untitled Task" : taskTitle)\"")
+                .font(.body)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+
+            Spacer()
+
+            Button("Revert", action: onRevert)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .frame(maxWidth: 400)
+        .onAppear {
+            // Auto-dismiss after 5 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    onDismiss()
+                }
+            }
+        }
     }
 }
 

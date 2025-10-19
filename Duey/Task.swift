@@ -31,6 +31,22 @@ final class Task {
         self.completedAt = nil
     }
 
+    init(
+        title: String,
+        content: String?,
+        deadline: Date?,
+        isCompleted: Bool,
+        createdAt: Date,
+        completedAt: Date?
+    ) {
+        self.title = title
+        self.content = content
+        self.deadline = deadline
+        self.isCompleted = isCompleted
+        self.createdAt = createdAt
+        self.completedAt = completedAt
+    }
+
     func markAsCompleted() {
         isCompleted = true
         completedAt = Date()
