@@ -10,11 +10,11 @@ import SwiftData
 
 @Model
 final class Task {
-    var title: String
+    var title: String = ""
     var content: String?
     var deadline: Date?
-    var isCompleted: Bool
-    var createdAt: Date
+    var isCompleted: Bool = false
+    var createdAt: Date = Date()
     var completedAt: Date?
 
     init(

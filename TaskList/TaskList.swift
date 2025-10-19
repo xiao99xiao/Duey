@@ -50,16 +50,32 @@ struct TaskProvider: TimelineProvider {
 
     private func fetchUnfinishedTasks() async -> [TaskInfo] {
         do {
-            // Configure ModelContainer to match the main app's configuration exactly
+            // Try with group container first
             let schema = Schema([Task.self])
-            let modelConfiguration = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: false,
-                cloudKitDatabase: .automatic,
-                groupContainer: .identifier("group.com.xiao99xiao.Duey")
-            )
-            let modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
-            let context = ModelContext(modelContainer)
+            var modelContainer: ModelContainer?
+
+            // First attempt: with group container
+            do {
+                let modelConfiguration = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: false,
+                    groupContainer: .identifier("group.com.xiao99xiao.Duey")
+                )
+                modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+                print("Widget: Successfully created ModelContainer with group container")
+            } catch {
+                print("Widget: Group container failed (\(error)), trying basic configuration")
+                // Fallback: basic configuration
+                let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                modelContainer = try ModelContainer(for: schema, configurations: [fallbackConfiguration])
+                print("Widget: Successfully created ModelContainer with basic configuration")
+            }
+
+            guard let container = modelContainer else {
+                throw NSError(domain: "Widget", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create ModelContainer"])
+            }
+
+            let context = ModelContext(container)
 
             let descriptor = FetchDescriptor<Task>(
                 predicate: #Predicate { !$0.isCompleted },
