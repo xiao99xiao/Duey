@@ -119,6 +119,7 @@ struct TaskHeaderView: View {
                         )
                         .datePickerStyle(.graphical)
                         .labelsHidden()
+                        .focusEffectDisabled()
                         .padding()
                     }
 
@@ -175,6 +176,7 @@ struct TaskHeaderView: View {
                         )
                         .datePickerStyle(.compact)
                         .labelsHidden()
+                        .focusEffectDisabled()
                         .padding()
                     }
                 }
