@@ -67,6 +67,13 @@ class AppSettings: ObservableObject {
         }
     }
 
+    @AppStorage("showMenuBarIcon")
+    var showMenuBarIcon = false {
+        didSet {
+            objectWillChange.send()
+        }
+    }
+
 
     // MARK: - Login Item Management
 

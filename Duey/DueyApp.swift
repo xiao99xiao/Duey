@@ -12,45 +12,31 @@ import SwiftData
 struct DueyApp: App {
     @StateObject private var smartTaskCapture = SmartTaskCapture()
     @StateObject private var appSettings = AppSettings()
-    @Environment(\.openWindow) private var openWindow
-
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Task.self,
-        ])
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .automatic
-        )
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            print("CloudKit ModelContainer creation failed: \(error)")
-            // Fallback to local-only configuration
-            let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            do {
-                return try ModelContainer(for: schema, configurations: [fallbackConfiguration])
-            } catch {
-                fatalError("Could not create fallback ModelContainer: \(error)")
-            }
-        }
-    }()
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        mainWindow
+        
+        taskSuggestionWindow
+        
+        menuBarExtra
+        
+        Settings {
+            SettingsView()
+        }
+    }
+    
+    @SceneBuilder
+    private var mainWindow: some Scene {
+        WindowGroup(id: "main") {
+            MainContentView()
                 .environmentObject(smartTaskCapture)
                 .environmentObject(appSettings)
-                .onReceive(smartTaskCapture.$shouldShowWindow) { shouldShow in
-                    if shouldShow, smartTaskCapture.currentSuggestion != nil {
-                        openWindow(id: "task-suggestion")
-                    }
-                }
         }
-        .modelContainer(sharedModelContainer)
-
+        .modelContainer(for: Task.self)
+    }
+    
+    @SceneBuilder
+    private var taskSuggestionWindow: some Scene {
         WindowGroup("Task Suggestion", id: "task-suggestion") {
             if let suggestion = smartTaskCapture.currentSuggestion {
                 TaskSuggestionWindow(
@@ -63,10 +49,35 @@ struct DueyApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
-        .modelContainer(sharedModelContainer)
-
-        Settings {
-            SettingsView()
+        .modelContainer(for: Task.self)
+    }
+    
+    @SceneBuilder
+    private var menuBarExtra: some Scene {
+        MenuBarExtra("Duey", systemImage: "checklist") {
+            if appSettings.showMenuBarIcon {
+                MenuBarView()
+                    .environmentObject(appSettings)
+                    .modelContainer(for: Task.self)
+            } else {
+                EmptyView()
+            }
         }
+        .menuBarExtraStyle(.menu)
+    }
+}
+
+struct MainContentView: View {
+    @EnvironmentObject private var smartTaskCapture: SmartTaskCapture
+    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(\.openWindow) private var openWindow
+    
+    var body: some View {
+        ContentView()
+            .onReceive(smartTaskCapture.$shouldShowWindow) { shouldShow in
+                if shouldShow, smartTaskCapture.currentSuggestion != nil {
+                    openWindow(id: "task-suggestion")
+                }
+            }
     }
 }

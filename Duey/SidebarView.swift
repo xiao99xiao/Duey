@@ -39,6 +39,9 @@ struct SidebarView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .createNewTask)) { _ in
+            createNewTask()
+        }
     }
 
     private func createNewTask() {

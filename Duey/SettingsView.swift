@@ -39,6 +39,17 @@ struct GeneralSettingsTab: View {
                     .help("Display completed tasks in the sidebar")
             }
 
+            Section("Menu Bar") {
+                Toggle("Show menu bar icon", isOn: $appSettings.showMenuBarIcon)
+                    .help("Display Duey icon in the menu bar for quick access")
+
+                if appSettings.showMenuBarIcon {
+                    Text("Click the menu bar icon to toggle the main window")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Startup") {
                 Toggle("Start Duey at login", isOn: $appSettings.startAtLogin)
                     .help("Automatically launch Duey when you log in to your Mac")

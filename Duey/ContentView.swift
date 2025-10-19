@@ -127,6 +127,11 @@ struct ContentView: View {
                 smartTaskCapture.analyzeClipboard()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .selectTask)) { notification in
+            if let taskId = notification.userInfo?["taskId"] as? PersistentIdentifier {
+                selectedTask = tasks.first(where: { $0.id == taskId })
+            }
+        }
         .onChange(of: selectedTask) { oldTask, newTask in
             handleTaskSelectionChange(from: oldTask, to: newTask)
         }
