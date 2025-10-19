@@ -69,34 +69,21 @@ struct TaskHeaderView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            ZStack(alignment: .topLeading) {
-                // TextField for focus management and placeholder
-                TextField("Task Title", text: .constant(""), axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.title2)
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, minHeight: 34)
-                    .foregroundStyle(Color.clear)
-                    .disabled(task.title.isEmpty ? false : true)
-                    .focused($titleFocused)
-
-                // TextEditor for actual text editing
-                TextEditor(text: $task.title)
-                    .font(.title2)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .frame(minHeight: 34)
-                    .focused($titleFocused)
-                    .opacity(task.title.isEmpty ? 0 : 1)
-
-                // Placeholder when empty
-                if task.title.isEmpty {
-                    Text("Task Title")
+            TextField("Task Title", text: $task.title, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.title2)
+                .lineLimit(1...3)
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(Color.clear)
+                .focused($titleFocused)
+                .overlay(
+                    TextEditor(text: $task.title)
                         .font(.title2)
-                        .foregroundStyle(.placeholder)
-                        .allowsHitTesting(false)
-                }
-            }
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .focused($titleFocused)
+                        .allowsHitTesting(task.title.isEmpty ? false : true)
+                )
             .frame(maxWidth: .infinity, alignment: .topLeading)
 
             VStack(alignment: .trailing, spacing: 8) {
