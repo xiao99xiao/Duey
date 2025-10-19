@@ -30,7 +30,7 @@ import SwiftData
         NSUpdateDynamicServices()
     }
 
-    @objc func analyzeSelectedText(_ pasteboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+    @objc func convertToTodoTask(_ pasteboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
         print("TextAnalysisService: Service called")
 
         guard let smartTaskCapture = smartTaskCapture else {
