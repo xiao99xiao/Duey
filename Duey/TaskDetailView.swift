@@ -75,6 +75,7 @@ struct TaskHeaderView: View {
                 .focused($titleFocused)
                 .frame(maxWidth: .infinity)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 4)
 
             VStack(alignment: .trailing, spacing: 8) {
                 HStack(alignment: .center, spacing: 8) {
