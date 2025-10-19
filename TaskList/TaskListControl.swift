@@ -45,7 +45,8 @@ extension TaskListControl {
                 let modelConfiguration = ModelConfiguration(
                     schema: schema,
                     isStoredInMemoryOnly: false,
-                    cloudKitDatabase: .automatic
+                    cloudKitDatabase: .automatic,
+                    groupContainer: .identifier("group.com.xiao99xiao.Duey")
                 )
                 let modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
                 let context = ModelContext(modelContainer)
@@ -55,6 +56,7 @@ extension TaskListControl {
                 )
 
                 let tasks = try context.fetch(descriptor)
+                print("Control Widget: Found \(tasks.count) unfinished tasks")
                 return tasks.count
             } catch {
                 print("Control Widget: Failed to fetch task count: \(error)")

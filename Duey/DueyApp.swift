@@ -21,7 +21,8 @@ struct DueyApp: App {
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
-            cloudKitDatabase: .automatic
+            cloudKitDatabase: .automatic,
+            groupContainer: .identifier("group.com.xiao99xiao.Duey")
         )
 
         do {

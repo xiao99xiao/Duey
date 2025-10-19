@@ -37,7 +37,7 @@ struct TaskProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TaskEntry>) -> ()) {
-        Task {
+        _Concurrency.Task {
             let tasks = await fetchUnfinishedTasks()
             let entry = TaskEntry(date: Date(), tasks: tasks)
 
@@ -50,12 +50,13 @@ struct TaskProvider: TimelineProvider {
 
     private func fetchUnfinishedTasks() async -> [TaskInfo] {
         do {
-            // Configure ModelContainer to match the main app's configuration
+            // Configure ModelContainer to match the main app's configuration exactly
             let schema = Schema([Task.self])
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false,
-                cloudKitDatabase: .automatic
+                cloudKitDatabase: .automatic,
+                groupContainer: .identifier("group.com.xiao99xiao.Duey")
             )
             let modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
             let context = ModelContext(modelContainer)
@@ -69,6 +70,7 @@ struct TaskProvider: TimelineProvider {
             )
 
             let tasks = try context.fetch(descriptor)
+            print("Widget: Found \(tasks.count) unfinished tasks")
 
             // Convert to TaskInfo and limit to first 8 tasks for widget display
             return tasks.prefix(8).map { task in
