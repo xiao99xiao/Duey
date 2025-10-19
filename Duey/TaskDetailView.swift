@@ -69,12 +69,35 @@ struct TaskHeaderView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            TextField("Task Title", text: $task.title, axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(.title2)
-                .focused($titleFocused)
-                .lineLimit(3)
-                .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
+            ZStack(alignment: .topLeading) {
+                // TextField for focus management and placeholder
+                TextField("Task Title", text: .constant(""), axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.title2)
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, minHeight: 34)
+                    .foregroundStyle(Color.clear)
+                    .disabled(task.title.isEmpty ? false : true)
+                    .focused($titleFocused)
+
+                // TextEditor for actual text editing
+                TextEditor(text: $task.title)
+                    .font(.title2)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .frame(minHeight: 34)
+                    .focused($titleFocused)
+                    .opacity(task.title.isEmpty ? 0 : 1)
+
+                // Placeholder when empty
+                if task.title.isEmpty {
+                    Text("Task Title")
+                        .font(.title2)
+                        .foregroundStyle(.placeholder)
+                        .allowsHitTesting(false)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
 
             VStack(alignment: .trailing, spacing: 8) {
                 HStack(alignment: .center, spacing: 8) {
