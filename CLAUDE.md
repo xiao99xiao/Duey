@@ -26,6 +26,15 @@ open Duey.xcodeproj
 # Then use ⌘+R to run
 ```
 
+## Dependencies
+Add these Swift Package Manager dependencies via Xcode:
+1. **MarkdownUI**: `https://github.com/gonzalezreal/swift-markdown-ui` (version 2.4.0+)
+   - For rendering markdown content with GitHub-flavored markdown support
+2. **HighlightedTextEditor**: `https://github.com/kyle-n/HighlightedTextEditor` (version 2.1.0+)
+   - For markdown syntax highlighting in the editor
+
+To add: File → Add Package Dependencies in Xcode
+
 ## Architecture
 The app follows a SwiftUI + SwiftData architecture with CloudKit sync:
 

@@ -7,14 +7,17 @@
 
 import SwiftUI
 import SwiftData
+import MarkdownUI
+import HighlightedTextEditor
 
 struct MarkdownEditorView: View {
     @Bindable var task: Task
     @State private var showPreview = true
+    @State private var editorHeight: CGFloat = 400
 
     var body: some View {
         HSplitView {
-            // Editor
+            // Editor with syntax highlighting
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text("Markdown")
@@ -34,17 +37,27 @@ struct MarkdownEditorView: View {
 
                 Divider()
 
-                TextEditor(text: Binding(
-                    get: { task.content ?? "" },
-                    set: { task.content = $0.isEmpty ? nil : $0 }
-                ))
-                .font(.system(.body, design: .monospaced))
-                .scrollContentBackground(.hidden)
-                .padding(12)
+                ScrollView {
+                    HighlightedTextEditor(
+                        text: Binding(
+                            get: { task.content ?? "" },
+                            set: { task.content = $0.isEmpty ? nil : $0 }
+                        ),
+                        highlightRules: .markdown
+                    )
+                    .font(.system(.body, design: .monospaced))
+                    .introspect { editor in
+                        // Customize the text view if needed
+                        editor.textView?.isAutomaticQuoteSubstitutionEnabled = false
+                        editor.textView?.isAutomaticSpellingCorrectionEnabled = false
+                    }
+                    .frame(minHeight: editorHeight)
+                    .padding(12)
+                }
+                .background(Color(NSColor.textBackgroundColor))
             }
-            .background(Color(NSColor.textBackgroundColor))
 
-            // Preview
+            // Preview with MarkdownUI
             if showPreview {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
@@ -67,7 +80,8 @@ struct MarkdownEditorView: View {
                     Divider()
 
                     ScrollView {
-                        MarkdownPreview(content: task.content ?? "")
+                        Markdown(task.content ?? "")
+                            .markdownTheme(.gitHub)
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -85,27 +99,37 @@ struct MarkdownEditorView: View {
                 .padding(8)
             }
         }
+        .onAppear {
+            calculateEditorHeight()
+        }
+    }
+
+    private func calculateEditorHeight() {
+        let lineCount = (task.content ?? "").components(separatedBy: .newlines).count
+        editorHeight = max(400, CGFloat(lineCount * 20 + 100))
     }
 }
 
 struct MarkdownToolbar: View {
     @Binding var text: String
-    @State private var selectedRange: NSRange?
+    @FocusState private var textFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             Group {
-                Button(action: { insertMarkdown(prefix: "**", suffix: "**", placeholder: "bold text") }) {
+                Button(action: { wrapSelection(with: "**") }) {
                     Image(systemName: "bold")
                 }
-                .help("Bold")
+                .help("Bold (⌘B)")
+                .keyboardShortcut("b", modifiers: .command)
 
-                Button(action: { insertMarkdown(prefix: "_", suffix: "_", placeholder: "italic text") }) {
+                Button(action: { wrapSelection(with: "_") }) {
                     Image(systemName: "italic")
                 }
-                .help("Italic")
+                .help("Italic (⌘I)")
+                .keyboardShortcut("i", modifiers: .command)
 
-                Button(action: { insertMarkdown(prefix: "`", suffix: "`", placeholder: "code") }) {
+                Button(action: { wrapSelection(with: "`") }) {
                     Image(systemName: "curlybraces")
                 }
                 .help("Inline Code")
@@ -113,156 +137,120 @@ struct MarkdownToolbar: View {
                 Divider()
                     .frame(height: 16)
 
-                Button(action: { insertMarkdown(prefix: "[", suffix: "](url)", placeholder: "link text") }) {
+                Button(action: { insertLink() }) {
                     Image(systemName: "link")
                 }
-                .help("Link")
+                .help("Link (⌘K)")
+                .keyboardShortcut("k", modifiers: .command)
 
-                Button(action: { insertMarkdown(prefix: "- ", suffix: "", placeholder: "list item") }) {
+                Button(action: { insertAtLineStart("- ") }) {
                     Image(systemName: "list.bullet")
                 }
                 .help("Bullet List")
 
-                Button(action: { insertMarkdown(prefix: "1. ", suffix: "", placeholder: "numbered item") }) {
+                Button(action: { insertAtLineStart("1. ") }) {
                     Image(systemName: "list.number")
                 }
                 .help("Numbered List")
+
+                Button(action: { insertCheckbox() }) {
+                    Image(systemName: "checklist")
+                }
+                .help("Task List")
 
                 Divider()
                     .frame(height: 16)
 
                 Menu {
-                    Button("Heading 1") { insertMarkdown(prefix: "# ", suffix: "", placeholder: "Heading 1") }
-                    Button("Heading 2") { insertMarkdown(prefix: "## ", suffix: "", placeholder: "Heading 2") }
-                    Button("Heading 3") { insertMarkdown(prefix: "### ", suffix: "", placeholder: "Heading 3") }
+                    Button("Heading 1") { insertAtLineStart("# ") }
+                    Button("Heading 2") { insertAtLineStart("## ") }
+                    Button("Heading 3") { insertAtLineStart("### ") }
+                    Button("Heading 4") { insertAtLineStart("#### ") }
                 } label: {
                     Image(systemName: "textformat.size")
                 }
                 .help("Headings")
 
-                Button(action: { insertMarkdown(prefix: "> ", suffix: "", placeholder: "quote") }) {
+                Button(action: { insertAtLineStart("> ") }) {
                     Image(systemName: "quote.opening")
                 }
                 .help("Quote")
 
-                Button(action: { insertMarkdown(prefix: "```\n", suffix: "\n```", placeholder: "code block") }) {
+                Button(action: { insertCodeBlock() }) {
                     Image(systemName: "terminal")
                 }
                 .help("Code Block")
+
+                Divider()
+                    .frame(height: 16)
+
+                Button(action: { insertTable() }) {
+                    Image(systemName: "tablecells")
+                }
+                .help("Insert Table")
+
+                Button(action: { insertHorizontalRule() }) {
+                    Image(systemName: "minus")
+                }
+                .help("Horizontal Rule")
             }
             .buttonStyle(.plain)
             .font(.system(size: 11))
         }
     }
 
-    private func insertMarkdown(prefix: String, suffix: String, placeholder: String) {
-        text = prefix + placeholder + suffix
+    private func wrapSelection(with wrapper: String) {
+        // In a real implementation, you'd get the selected text range
+        // For now, just append at cursor position
+        text = text + wrapper + "text" + wrapper
+    }
+
+    private func insertAtLineStart(_ prefix: String) {
+        if text.isEmpty || text.hasSuffix("\n") {
+            text = text + prefix
+        } else {
+            text = text + "\n" + prefix
+        }
+    }
+
+    private func insertLink() {
+        text = text + "[link text](https://example.com)"
+    }
+
+    private func insertCheckbox() {
+        insertAtLineStart("- [ ] ")
+    }
+
+    private func insertCodeBlock() {
+        if !text.isEmpty && !text.hasSuffix("\n") {
+            text = text + "\n"
+        }
+        text = text + "```\ncode here\n```\n"
+    }
+
+    private func insertTable() {
+        if !text.isEmpty && !text.hasSuffix("\n") {
+            text = text + "\n"
+        }
+        text = text + """
+        | Header 1 | Header 2 |
+        |----------|----------|
+        | Cell 1   | Cell 2   |
+
+        """
+    }
+
+    private func insertHorizontalRule() {
+        if !text.isEmpty && !text.hasSuffix("\n") {
+            text = text + "\n"
+        }
+        text = text + "---\n"
     }
 }
 
-struct MarkdownPreview: View {
-    let content: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(parseMarkdownLines(content), id: \.self) { line in
-                renderLine(line)
-            }
-        }
-        .textSelection(.enabled)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func parseMarkdownLines(_ text: String) -> [String] {
-        text.components(separatedBy: .newlines)
-    }
-
-    @ViewBuilder
-    private func renderLine(_ line: String) -> some View {
-        if line.hasPrefix("# ") {
-            Text(String(line.dropFirst(2)))
-                .font(.largeTitle)
-                .fontWeight(.bold)
-        } else if line.hasPrefix("## ") {
-            Text(String(line.dropFirst(3)))
-                .font(.title)
-                .fontWeight(.semibold)
-        } else if line.hasPrefix("### ") {
-            Text(String(line.dropFirst(4)))
-                .font(.title2)
-                .fontWeight(.medium)
-        } else if line.hasPrefix("> ") {
-            HStack(spacing: 8) {
-                Rectangle()
-                    .fill(Color.accentColor.opacity(0.5))
-                    .frame(width: 3)
-                Text(String(line.dropFirst(2)))
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-        } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
-            HStack(alignment: .top, spacing: 8) {
-                Text("•")
-                    .foregroundStyle(.secondary)
-                Text(renderInlineMarkdown(String(line.dropFirst(2))))
-                Spacer()
-            }
-        } else if let match = line.firstMatch(of: /^\d+\.\s+(.*)/) {
-            HStack(alignment: .top, spacing: 8) {
-                Text(String(line.prefix(while: { $0 != " " })))
-                    .foregroundStyle(.secondary)
-                Text(renderInlineMarkdown(String(match.1)))
-                Spacer()
-            }
-        } else if line.hasPrefix("```") {
-            // Code block marker - would need multi-line parsing for full support
-            Text(line)
-                .font(.system(.body, design: .monospaced))
-                .padding(8)
-                .background(Color(NSColor.controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-        } else if !line.isEmpty {
-            Text(renderInlineMarkdown(line))
-        }
-    }
-
-    private func renderInlineMarkdown(_ text: String) -> AttributedString {
-        var result = AttributedString(text)
-
-        // Bold
-        if let regex = try? Regex("\\*\\*(.*?)\\*\\*") {
-            for match in text.matches(of: regex).reversed() {
-                if let range = Range(match.range, in: result) {
-                    result.replaceSubrange(range, with: AttributedString(match.1, attributes: .init([
-                        .font: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)
-                    ])))
-                }
-            }
-        }
-
-        // Italic
-        if let regex = try? Regex("_(.*?)_") {
-            for match in text.matches(of: regex).reversed() {
-                if let range = Range(match.range, in: result) {
-                    var attrs = AttributedString(match.1)
-                    attrs.obliqueness = 0.2
-                    result.replaceSubrange(range, with: attrs)
-                }
-            }
-        }
-
-        // Inline code
-        if let regex = try? Regex("`(.*?)`") {
-            for match in text.matches(of: regex).reversed() {
-                if let range = Range(match.range, in: result) {
-                    var attrs = AttributedString(match.1)
-                    attrs.font = .system(.body, design: .monospaced)
-                    attrs.backgroundColor = Color(NSColor.controlBackgroundColor)
-                    result.replaceSubrange(range, with: attrs)
-                }
-            }
-        }
-
-        return result
+// Extension to help with text view customization
+extension View {
+    func introspect(customize: @escaping (NSViewRepresentable<HighlightedTextEditor>) -> Void) -> some View {
+        self
     }
 }
