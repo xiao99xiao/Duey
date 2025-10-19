@@ -179,17 +179,21 @@ struct TaskHeaderView: View {
                         .focusEffectDisabled()
                         .padding()
                     }
-                }
 
-                if task.deadline != nil {
-                    Button("Clear", systemImage: "xmark.circle.fill") {
-                        task.deadline = nil
-                        showingDatePicker = false
-                        showingTimePicker = false
+                    if task.deadline != nil {
+                        Button(action: {
+                            task.deadline = nil
+                            showingDatePicker = false
+                            showingTimePicker = false
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .foregroundStyle(.secondary)
+                        .help("Clear deadline")
                     }
-                    .font(.caption2)
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
                 }
             }
         }
