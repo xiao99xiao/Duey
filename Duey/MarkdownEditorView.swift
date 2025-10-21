@@ -24,6 +24,7 @@ struct MarkdownEditorView: View {
             )
             .introspect { editor in
                 editor.textView.backgroundColor = .clear
+                editor.scrollView?.backgroundColor = .clear
             }
             .font(.system(.body, design: .monospaced))
             .padding(12)
