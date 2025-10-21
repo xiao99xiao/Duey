@@ -11,6 +11,7 @@ import WidgetKit
 import SwiftData
 import Foundation
 
+@available(macOS 26.0, *)
 struct TaskListControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
@@ -32,6 +33,7 @@ struct TaskListControl: ControlWidget {
     }
 }
 
+@available(macOS 26.0, *)
 extension TaskListControl {
     struct Provider: ControlValueProvider {
         var previewValue: Int {

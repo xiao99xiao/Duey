@@ -10,8 +10,12 @@ import SwiftUI
 
 @main
 struct TaskListBundle: WidgetBundle {
+    @WidgetBundleBuilder
     var body: some Widget {
         TaskList()
-        TaskListControl()
+
+        if #available(macOS 26.0, *) {
+            TaskListControl()
+        }
     }
 }
