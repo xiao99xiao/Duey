@@ -23,9 +23,8 @@ struct MarkdownEditorView: View {
                 highlightRules: .markdown
             )
             .introspect { editor in
-                editor.textView.backgroundColor = .clear
-                editor.scrollView?.backgroundColor = .clear
-            }
+                editor.textView.drawsBackground = false
+                editor.scrollView?.drawsBackground = false            }
             .font(.system(.body, design: .monospaced))
             .padding(12)
         }

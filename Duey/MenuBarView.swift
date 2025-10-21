@@ -27,7 +27,6 @@ struct MenuBarView: View {
         Button(action: createNewTask) {
             Label("New Task", systemImage: "plus.circle")
         }
-        .keyboardShortcut("n", modifiers: .command)
 
         Divider()
 
@@ -85,9 +84,16 @@ struct MenuBarView: View {
     }
 
     private func openMainWindow() {
-        // Open the main window
+        // Open or focus the main window
         openWindow(id: "main")
         NSApp.activate(ignoringOtherApps: true)
+
+        // Ensure the window is brought to front
+        DispatchQueue.main.async {
+            if let mainWindow = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+                mainWindow.makeKeyAndOrderFront(nil)
+            }
+        }
     }
 
     private func createNewTask() {

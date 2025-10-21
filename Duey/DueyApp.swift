@@ -27,12 +27,23 @@ struct DueyApp: App {
     
     @SceneBuilder
     private var mainWindow: some Scene {
-        WindowGroup(id: "main") {
+        Window("Duey", id: "main") {
             MainContentView()
                 .environmentObject(smartTaskCapture)
                 .environmentObject(appSettings)
+                .frame(minWidth: 800, idealWidth: 1000, minHeight: 500, idealHeight: 700)
         }
         .modelContainer(for: Task.self)
+        .defaultPosition(.center)
+        .defaultSize(width: 1000, height: 700)
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("New Task") {
+                    NotificationCenter.default.post(name: .createNewTask, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+        }
     }
     
     @SceneBuilder
