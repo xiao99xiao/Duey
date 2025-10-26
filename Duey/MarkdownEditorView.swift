@@ -17,14 +17,21 @@ struct MarkdownEditorView: View {
             
             HighlightedTextEditor(
                 text: Binding(
-                    get: { task.content ?? "" },
-                    set: { task.content = $0.isEmpty ? nil : $0 }
+                    get: { 
+                        // Convert AttributedString to plain String for markdown editing
+                        String(task.attributedContent.characters)
+                    },
+                    set: { newValue in
+                        // Convert plain String back to AttributedString
+                        task.attributedContent = newValue.isEmpty ? AttributedString("") : AttributedString(newValue)
+                    }
                 ),
                 highlightRules: .markdown
             )
             .introspect { editor in
                 editor.textView.drawsBackground = false
-                editor.scrollView?.drawsBackground = false            }
+                editor.scrollView?.drawsBackground = false
+            }
             .font(.system(.body, design: .monospaced))
             .padding(12)
         }

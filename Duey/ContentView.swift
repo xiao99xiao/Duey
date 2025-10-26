@@ -153,7 +153,7 @@ struct ContentView: View {
             // Create a new task with the same properties
             let restoredTask = Task(
                 title: deletedTask.title,
-                content: deletedTask.content,
+                contentData: deletedTask.contentData,
                 deadline: deletedTask.deadline,
                 isCompleted: deletedTask.isCompleted,
                 createdAt: deletedTask.createdAt,

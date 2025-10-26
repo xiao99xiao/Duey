@@ -27,7 +27,7 @@ struct TaskDetailView: View {
 
             Divider()
 
-            MarkdownEditorView(task: task)
+            RichTextEditorView(task: task)
         }
         .navigationTitle("")
         .toolbar {
