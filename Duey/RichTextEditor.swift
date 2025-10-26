@@ -484,8 +484,92 @@ struct ListContinuationHandler: NSViewRepresentable {
                     }
                 }
 
+                // Check for Tab key (indent list)
+                if event.keyCode == 48 {
+                    if event.modifierFlags.contains(.shift) {
+                        // Shift+Tab - outdent
+                        if self.handleOutdent(textView) {
+                            return nil
+                        }
+                    } else if event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
+                        // Tab - indent
+                        if self.handleIndent(textView) {
+                            return nil
+                        }
+                    }
+                }
+
                 return event // Let event propagate normally
             }
+        }
+
+        private func handleIndent(_ textView: NSTextView) -> Bool {
+            guard let textStorage = textView.textStorage else { return false }
+
+            let cursorPosition = textView.selectedRange().location
+            let string = textStorage.string as NSString
+
+            // Find the current line
+            var lineStart = 0
+            var lineEnd = 0
+            var contentsEnd = 0
+            string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
+
+            let lineRange = NSRange(location: lineStart, length: contentsEnd - lineStart)
+            let lineText = string.substring(with: lineRange)
+
+            // Check if line is a list item (starts with bullet or number)
+            let isBulletList = lineText.hasPrefix("• ") || lineText.range(of: "^\\s+• ", options: .regularExpression) != nil
+            let isNumberedList = lineText.range(of: "^\\s*\\d+\\. ", options: .regularExpression) != nil
+
+            if isBulletList || isNumberedList {
+                // Insert two spaces at the start of the line for indentation
+                let attributes = textStorage.attributes(at: lineStart, effectiveRange: nil)
+                let indent = NSAttributedString(string: "  ", attributes: attributes)
+
+                textStorage.beginEditing()
+                textStorage.insert(indent, at: lineStart)
+                textStorage.endEditing()
+
+                // Move cursor accordingly
+                textView.setSelectedRange(NSRange(location: cursorPosition + 2, length: 0))
+
+                return true
+            }
+
+            return false
+        }
+
+        private func handleOutdent(_ textView: NSTextView) -> Bool {
+            guard let textStorage = textView.textStorage else { return false }
+
+            let cursorPosition = textView.selectedRange().location
+            let string = textStorage.string as NSString
+
+            // Find the current line
+            var lineStart = 0
+            var lineEnd = 0
+            var contentsEnd = 0
+            string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
+
+            let lineRange = NSRange(location: lineStart, length: contentsEnd - lineStart)
+            let lineText = string.substring(with: lineRange)
+
+            // Check if line starts with spaces
+            if lineText.hasPrefix("  ") {
+                // Remove two spaces from the start
+                textStorage.beginEditing()
+                textStorage.replaceCharacters(in: NSRange(location: lineStart, length: 2), with: "")
+                textStorage.endEditing()
+
+                // Move cursor back
+                let newPosition = max(lineStart, cursorPosition - 2)
+                textView.setSelectedRange(NSRange(location: newPosition, length: 0))
+
+                return true
+            }
+
+            return false
         }
 
         private func handleSpaceKey(_ textView: NSTextView) -> Bool {
@@ -578,27 +662,35 @@ struct ListContinuationHandler: NSViewRepresentable {
             let lineRange = NSRange(location: lineStart, length: contentsEnd - lineStart)
             let lineText = string.substring(with: lineRange)
 
-            // Check if cursor is right after a bullet point marker at the start of line
-            if cursorPosition == lineStart + 2 && lineText.hasPrefix("• ") {
-                // Remove the bullet marker
-                textStorage.beginEditing()
-                textStorage.replaceCharacters(in: NSRange(location: lineStart, length: 2), with: "")
-                textStorage.endEditing()
-                textView.setSelectedRange(NSRange(location: lineStart, length: 0))
-                return true
+            // Check if cursor is right after a bullet point marker (with or without indentation)
+            let bulletPattern = "^(\\s*)• "
+            if let regex = try? NSRegularExpression(pattern: bulletPattern),
+               let match = regex.firstMatch(in: lineText, range: NSRange(location: 0, length: lineText.utf16.count)) {
+                let markerLength = match.range.length
+                if cursorPosition == lineStart + markerLength {
+                    // Remove the bullet marker (but keep indentation)
+                    let indentLength = match.range(at: 1).length
+                    textStorage.beginEditing()
+                    textStorage.replaceCharacters(in: NSRange(location: lineStart + indentLength, length: 2), with: "")
+                    textStorage.endEditing()
+                    textView.setSelectedRange(NSRange(location: lineStart + indentLength, length: 0))
+                    return true
+                }
             }
 
-            // Check if cursor is right after a numbered list marker
-            let numberPattern = "^(\\d+)\\. "
+            // Check if cursor is right after a numbered list marker (with or without indentation)
+            let numberPattern = "^(\\s*)(\\d+)\\. "
             if let regex = try? NSRegularExpression(pattern: numberPattern),
                let match = regex.firstMatch(in: lineText, range: NSRange(location: 0, length: lineText.utf16.count)) {
                 let markerLength = match.range.length
                 if cursorPosition == lineStart + markerLength {
-                    // Remove the numbered marker
+                    // Remove the numbered marker (but keep indentation)
+                    let indentLength = match.range(at: 1).length
+                    let numberAndDotLength = match.range(at: 2).length + 2 // number + ". "
                     textStorage.beginEditing()
-                    textStorage.replaceCharacters(in: NSRange(location: lineStart, length: markerLength), with: "")
+                    textStorage.replaceCharacters(in: NSRange(location: lineStart + indentLength, length: numberAndDotLength), with: "")
                     textStorage.endEditing()
-                    textView.setSelectedRange(NSRange(location: lineStart, length: 0))
+                    textView.setSelectedRange(NSRange(location: lineStart + indentLength, length: 0))
                     return true
                 }
             }
@@ -624,30 +716,41 @@ struct ListContinuationHandler: NSViewRepresentable {
             let lineRange = NSRange(location: lineStart, length: contentsEnd - lineStart)
             let lineText = string.substring(with: lineRange)
 
-            // Check if line starts with bullet point
-            if lineText.hasPrefix("• ") {
-                // If line is just "• ", remove it and insert normal newline
+            // Extract leading spaces (indentation)
+            var indent = ""
+            for char in lineText {
+                if char == " " {
+                    indent += " "
+                } else {
+                    break
+                }
+            }
+
+            // Check if line has bullet point (with or without indentation)
+            let bulletPattern = "^\\s*• "
+            if lineText.range(of: bulletPattern, options: .regularExpression) != nil {
+                // If line is just indentation + "• ", remove it and insert normal newline
                 if lineText.trimmingCharacters(in: .whitespaces) == "•" {
                     textStorage.replaceCharacters(in: lineRange, with: "")
                     return false // Let default newline behavior happen
                 }
 
-                // Insert newline and bullet
+                // Insert newline, indentation, and bullet
                 let attributes = textStorage.attributes(at: cursorPosition > 0 ? cursorPosition - 1 : 0, effectiveRange: nil)
-                let bullet = NSAttributedString(string: "\n• ", attributes: attributes)
+                let bullet = NSAttributedString(string: "\n\(indent)• ", attributes: attributes)
 
                 textStorage.insert(bullet, at: cursorPosition)
-                textView.setSelectedRange(NSRange(location: cursorPosition + 3, length: 0))
+                textView.setSelectedRange(NSRange(location: cursorPosition + bullet.length, length: 0))
 
                 return true // We handled it
             }
 
-            // Check if line starts with numbered list (e.g., "1. ", "2. ", etc.)
-            let numberPattern = "^(\\d+)\\. "
+            // Check if line has numbered list (with or without indentation)
+            let numberPattern = "^\\s*(\\d+)\\. "
             if let regex = try? NSRegularExpression(pattern: numberPattern),
                let match = regex.firstMatch(in: lineText, range: NSRange(location: 0, length: lineText.utf16.count)) {
 
-                // If line is just the number, remove it and insert normal newline
+                // If line is just indentation + number, remove it and insert normal newline
                 if lineText.trimmingCharacters(in: .whitespaces).hasSuffix(".") {
                     textStorage.replaceCharacters(in: lineRange, with: "")
                     return false
@@ -659,7 +762,7 @@ struct ListContinuationHandler: NSViewRepresentable {
                 if let number = Int(numberString) {
                     let nextNumber = number + 1
                     let attributes = textStorage.attributes(at: cursorPosition > 0 ? cursorPosition - 1 : 0, effectiveRange: nil)
-                    let numberedItem = NSAttributedString(string: "\n\(nextNumber). ", attributes: attributes)
+                    let numberedItem = NSAttributedString(string: "\n\(indent)\(nextNumber). ", attributes: attributes)
 
                     textStorage.insert(numberedItem, at: cursorPosition)
                     textView.setSelectedRange(NSRange(location: cursorPosition + numberedItem.length, length: 0))
