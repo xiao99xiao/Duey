@@ -12,6 +12,9 @@ struct RichTextEditor: View {
     @Binding var text: AttributedString
     @State private var selection = AttributedTextSelection()
     @Environment(\.fontResolutionContext) var fontResolutionContext
+    @State private var showLinkPopover = false
+    @State private var linkURL = ""
+    @State private var linkText = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,6 +49,20 @@ struct RichTextEditor: View {
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: hasSelection)
+        .onAppear {
+            // Set up keyboard shortcut for link insertion
+            NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                // Check for Command+K
+                if event.keyCode == 40 && event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.shift) && !event.modifierFlags.contains(.option) {
+                    if hasSelection {
+                        prepareLink()
+                        showLinkPopover = true
+                        return nil // Event handled
+                    }
+                }
+                return event
+            }
+        }
     }
 
     // MARK: - Selection State
@@ -122,9 +139,70 @@ struct RichTextEditor: View {
             }
             .buttonStyle(.plain)
             .help("Numbered List")
+
+            Divider()
+                .frame(height: 16)
+
+            // Link
+            Button(action: {
+                prepareLink()
+                showLinkPopover = true
+            }) {
+                Image(systemName: "link")
+                    .font(.system(size: 14, weight: hasLink ? .bold : .regular))
+                    .foregroundStyle(hasLink ? .blue : .primary)
+            }
+            .buttonStyle(.plain)
+            .help("Insert Link (⌘K)")
+            .popover(isPresented: $showLinkPopover) {
+                linkPopoverContent
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+    }
+
+    private var linkPopoverContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Insert Link")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Text:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("Link text", text: $linkText)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 250)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("URL:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("https://example.com", text: $linkURL)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 250)
+            }
+
+            HStack {
+                Button("Cancel") {
+                    showLinkPopover = false
+                    linkURL = ""
+                    linkText = ""
+                }
+                .keyboardShortcut(.escape)
+
+                Spacer()
+
+                Button("Insert") {
+                    insertLink()
+                }
+                .keyboardShortcut(.return)
+                .disabled(linkURL.isEmpty)
+            }
+        }
+        .padding()
     }
 
     // MARK: - Formatting State
@@ -153,7 +231,26 @@ struct RichTextEditor: View {
         return attributes.strikethroughStyle != nil
     }
 
+    private var hasLink: Bool {
+        let attributes = selection.typingAttributes(in: text)
+        return attributes.link != nil
+    }
+
     // MARK: - Formatting Actions
+
+    private func prepareLink() {
+        // Pre-fill link text with selected text
+        if case .ranges(let ranges) = selection.indices(in: text), !ranges.isEmpty {
+            for range in ranges.ranges {
+                linkText = String(text[range].characters)
+                // Check if selection already has a link
+                if let existingLink = text[range].runs.first?.link {
+                    linkURL = existingLink.absoluteString
+                }
+                break
+            }
+        }
+    }
 
     private func toggleBold() {
         text.transformAttributes(in: &selection) { container in
@@ -237,6 +334,43 @@ struct RichTextEditor: View {
                 break // Only insert at the first range
             }
         }
+    }
+
+    private func insertLink() {
+        guard let url = URL(string: linkURL) else { return }
+
+        let indices = selection.indices(in: text)
+
+        switch indices {
+        case .insertionPoint(let point):
+            // Insert new link with provided text
+            let displayText = linkText.isEmpty ? linkURL : linkText
+            var linkString = AttributedString(displayText)
+            let typingAttrs = selection.typingAttributes(in: text)
+            linkString.setAttributes(typingAttrs)
+            linkString.link = url
+            text.insert(linkString, at: point)
+
+        case .ranges(let rangeSet):
+            // Apply link to selected text
+            for range in rangeSet.ranges {
+                text[range].link = url
+                // If link text was provided, replace the selected text
+                if !linkText.isEmpty {
+                    var linkString = AttributedString(linkText)
+                    let existingAttrs = text[range].runs.first?.attributes ?? AttributeContainer()
+                    linkString.setAttributes(existingAttrs)
+                    linkString.link = url
+                    text.replaceSubrange(range, with: linkString)
+                }
+                break // Only apply to first range
+            }
+        }
+
+        // Reset state
+        showLinkPopover = false
+        linkURL = ""
+        linkText = ""
     }
 }
 
@@ -595,6 +729,7 @@ struct MarkdownCopyHandler: NSViewRepresentable {
             var currentItalic = false
             var currentUnderline = false
             var currentStrikethrough = false
+            var currentLink: URL? = nil
 
             attributedString.enumerateAttributes(in: NSRange(location: 0, length: attributedString.length)) { attributes, range, _ in
                 let substring = (string as NSString).substring(with: range)
@@ -604,6 +739,7 @@ struct MarkdownCopyHandler: NSViewRepresentable {
                 var isItalic = false
                 var hasUnderline = false
                 var hasStrikethrough = false
+                var linkURL: URL? = nil
 
                 if let font = attributes[.font] as? NSFont {
                     isBold = font.fontDescriptor.symbolicTraits.contains(.bold)
@@ -616,6 +752,22 @@ struct MarkdownCopyHandler: NSViewRepresentable {
 
                 if attributes[.strikethroughStyle] != nil {
                     hasStrikethrough = true
+                }
+
+                if let link = attributes[.link] as? URL {
+                    linkURL = link
+                }
+
+                // Handle link start
+                if linkURL != nil && currentLink == nil {
+                    markdown += "["
+                }
+
+                // Close link if it ended
+                if currentLink != nil && linkURL == nil {
+                    if let url = currentLink {
+                        markdown += "](\(url.absoluteString))"
+                    }
                 }
 
                 // Process each character to handle newlines specially
@@ -694,10 +846,14 @@ struct MarkdownCopyHandler: NSViewRepresentable {
                     currentItalic = isItalic
                     currentUnderline = hasUnderline
                     currentStrikethrough = hasStrikethrough
+                    currentLink = linkURL
                 }
             }
 
             // Close any remaining formatting at the end
+            if let url = currentLink {
+                markdown += "](\(url.absoluteString))"
+            }
             if currentStrikethrough {
                 markdown += "~~"
             }
