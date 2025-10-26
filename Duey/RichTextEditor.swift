@@ -24,6 +24,10 @@ struct RichTextEditor: View {
                     // Add list continuation support
                     ListContinuationHandler(text: $text)
                 )
+                .background(
+                    // Add markdown copy support
+                    MarkdownCopyHandler()
+                )
 
             // Formatting Toolbar (appears when text is selected)
             if hasSelection {
@@ -462,6 +466,253 @@ struct ListContinuationHandler: NSViewRepresentable {
             }
 
             return false // Not a list, use default behavior
+        }
+    }
+}
+
+// MARK: - Markdown Copy Handler
+
+struct MarkdownCopyHandler: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.isHidden = true
+
+        DispatchQueue.main.async {
+            context.coordinator.findAndSetupTextView(from: view)
+        }
+
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if context.coordinator.textView == nil {
+            DispatchQueue.main.async {
+                context.coordinator.findAndSetupTextView(from: nsView)
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator: NSObject {
+        weak var textView: NSTextView?
+        private var eventMonitor: Any?
+
+        deinit {
+            if let monitor = eventMonitor {
+                NSEvent.removeMonitor(monitor)
+            }
+        }
+
+        func findAndSetupTextView(from view: NSView) {
+            var currentView: NSView? = view
+            while let v = currentView {
+                if let window = v.window {
+                    if let textView = findTextView(in: window.contentView) {
+                        self.textView = textView
+                        setupCopyMonitor()
+                        print("✅ Markdown copy handler set up")
+                        return
+                    }
+                }
+                currentView = v.superview
+            }
+        }
+
+        private func findTextView(in view: NSView?) -> NSTextView? {
+            guard let view = view else { return nil }
+
+            if let textView = view as? NSTextView {
+                return textView
+            }
+
+            for subview in view.subviews {
+                if let textView = findTextView(in: subview) {
+                    return textView
+                }
+            }
+
+            return nil
+        }
+
+        private func setupCopyMonitor() {
+            // Remove existing monitor if any
+            if let monitor = eventMonitor {
+                NSEvent.removeMonitor(monitor)
+            }
+
+            // Monitor Command+C
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self = self,
+                      let textView = self.textView,
+                      textView.window?.firstResponder == textView else {
+                    return event
+                }
+
+                // Check for Command+C
+                if event.keyCode == 8 && event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.shift) && !event.modifierFlags.contains(.option) {
+                    self.handleCopy(textView)
+                    return nil // Event handled
+                }
+
+                return event
+            }
+        }
+
+        private func handleCopy(_ textView: NSTextView) {
+            guard let textStorage = textView.textStorage else { return }
+
+            let selectedRange = textView.selectedRange()
+            guard selectedRange.length > 0 else { return }
+
+            // Get the selected attributed text
+            let selectedAttributedText = textStorage.attributedSubstring(from: selectedRange)
+
+            // Convert to markdown
+            let markdown = convertToMarkdown(selectedAttributedText)
+
+            // Put both on pasteboard
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+
+            // Add rich text (RTF)
+            if let rtfData = selectedAttributedText.rtf(from: NSRange(location: 0, length: selectedAttributedText.length)) {
+                pasteboard.setData(rtfData, forType: .rtf)
+            }
+
+            // Add plain text as markdown
+            pasteboard.setString(markdown, forType: .string)
+        }
+
+        private func convertToMarkdown(_ attributedString: NSAttributedString) -> String {
+            var markdown = ""
+            let string = attributedString.string
+
+            // Track current formatting state
+            var currentBold = false
+            var currentItalic = false
+            var currentUnderline = false
+            var currentStrikethrough = false
+
+            attributedString.enumerateAttributes(in: NSRange(location: 0, length: attributedString.length)) { attributes, range, _ in
+                let substring = (string as NSString).substring(with: range)
+
+                // Determine formatting for this range
+                var isBold = false
+                var isItalic = false
+                var hasUnderline = false
+                var hasStrikethrough = false
+
+                if let font = attributes[.font] as? NSFont {
+                    isBold = font.fontDescriptor.symbolicTraits.contains(.bold)
+                    isItalic = font.fontDescriptor.symbolicTraits.contains(.italic)
+                }
+
+                if attributes[.underlineStyle] != nil {
+                    hasUnderline = true
+                }
+
+                if attributes[.strikethroughStyle] != nil {
+                    hasStrikethrough = true
+                }
+
+                // Process each character to handle newlines specially
+                for char in substring {
+                    let isNewline = char == "\n"
+
+                    // Close formatting before newline
+                    if isNewline {
+                        if currentStrikethrough {
+                            markdown += "~~"
+                        }
+                        if currentUnderline {
+                            markdown += "</u>"
+                        }
+                        if currentBold && currentItalic {
+                            markdown += "***"
+                        } else if currentBold {
+                            markdown += "**"
+                        } else if currentItalic {
+                            markdown += "*"
+                        }
+                    } else {
+                        // Open formatting if needed (not a newline and formatting changed)
+                        if hasStrikethrough && !currentStrikethrough {
+                            markdown += "~~"
+                        }
+                        if hasUnderline && !currentUnderline {
+                            markdown += "<u>"
+                        }
+                        if isBold && isItalic && !(currentBold && currentItalic) {
+                            markdown += "***"
+                        } else if isBold && !currentBold {
+                            markdown += "**"
+                        } else if isItalic && !currentItalic {
+                            markdown += "*"
+                        }
+
+                        // Close formatting if changed
+                        if !hasStrikethrough && currentStrikethrough {
+                            markdown += "~~"
+                        }
+                        if !hasUnderline && currentUnderline {
+                            markdown += "</u>"
+                        }
+                        if !(isBold && isItalic) && currentBold && currentItalic {
+                            markdown += "***"
+                        } else if !isBold && currentBold && !currentItalic {
+                            markdown += "**"
+                        } else if !isItalic && currentItalic && !currentBold {
+                            markdown += "*"
+                        }
+                    }
+
+                    // Add the character
+                    markdown.append(char)
+
+                    // Reopen formatting after newline
+                    if isNewline {
+                        if hasStrikethrough {
+                            markdown += "~~"
+                        }
+                        if hasUnderline {
+                            markdown += "<u>"
+                        }
+                        if isBold && isItalic {
+                            markdown += "***"
+                        } else if isBold {
+                            markdown += "**"
+                        } else if isItalic {
+                            markdown += "*"
+                        }
+                    }
+
+                    // Update current state
+                    currentBold = isBold
+                    currentItalic = isItalic
+                    currentUnderline = hasUnderline
+                    currentStrikethrough = hasStrikethrough
+                }
+            }
+
+            // Close any remaining formatting at the end
+            if currentStrikethrough {
+                markdown += "~~"
+            }
+            if currentUnderline {
+                markdown += "</u>"
+            }
+            if currentBold && currentItalic {
+                markdown += "***"
+            } else if currentBold {
+                markdown += "**"
+            } else if currentItalic {
+                markdown += "*"
+            }
+
+            return markdown
         }
     }
 }
