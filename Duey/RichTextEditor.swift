@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+internal import AppKit
 
 struct RichTextEditor: View {
     @Binding var text: AttributedString
@@ -19,6 +20,10 @@ struct RichTextEditor: View {
                 .font(.body)
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
+                .background(
+                    // Add list continuation support
+                    ListContinuationHandler(text: $text)
+                )
 
             // Formatting Toolbar (appears when text is selected)
             if hasSelection {
@@ -222,6 +227,236 @@ struct RichTextEditor: View {
                 text.insert(number, at: range.lowerBound)
                 break // Only insert at the first range
             }
+        }
+    }
+}
+
+// MARK: - List Continuation Handler
+
+struct ListContinuationHandler: NSViewRepresentable {
+    @Binding var text: AttributedString
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.isHidden = true
+
+        DispatchQueue.main.async {
+            context.coordinator.findAndSetupTextView(from: view)
+        }
+
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if context.coordinator.textView == nil {
+            DispatchQueue.main.async {
+                context.coordinator.findAndSetupTextView(from: nsView)
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    class Coordinator: NSObject {
+        @Binding var text: AttributedString
+        weak var textView: NSTextView?
+        private var eventMonitor: Any?
+
+        init(text: Binding<AttributedString>) {
+            self._text = text
+            super.init()
+        }
+
+        deinit {
+            if let monitor = eventMonitor {
+                NSEvent.removeMonitor(monitor)
+            }
+        }
+
+        func findAndSetupTextView(from view: NSView) {
+            var currentView: NSView? = view
+            while let v = currentView {
+                if let window = v.window {
+                    if let textView = findTextView(in: window.contentView) {
+                        self.textView = textView
+                        setupKeyEventMonitor()
+                        print("✅ List continuation handler set up")
+                        return
+                    }
+                }
+                currentView = v.superview
+            }
+        }
+
+        private func findTextView(in view: NSView?) -> NSTextView? {
+            guard let view = view else { return nil }
+
+            if let textView = view as? NSTextView {
+                return textView
+            }
+
+            for subview in view.subviews {
+                if let textView = findTextView(in: subview) {
+                    return textView
+                }
+            }
+
+            return nil
+        }
+
+        private func setupKeyEventMonitor() {
+            // Remove existing monitor if any
+            if let monitor = eventMonitor {
+                NSEvent.removeMonitor(monitor)
+            }
+
+            // Monitor key events locally
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self = self,
+                      let textView = self.textView,
+                      textView.window?.firstResponder == textView else {
+                    return event
+                }
+
+                // Check for Return key
+                if event.keyCode == 36 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
+                    if self.handleReturnKey(textView) {
+                        return nil // Event handled, don't propagate
+                    }
+                }
+
+                // Check for Delete/Backspace key
+                if event.keyCode == 51 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
+                    if self.handleDeleteKey(textView) {
+                        return nil // Event handled, don't propagate
+                    }
+                }
+
+                return event // Let event propagate normally
+            }
+        }
+
+        private func handleDeleteKey(_ textView: NSTextView) -> Bool {
+            guard let textStorage = textView.textStorage else { return false }
+
+            let selectedRange = textView.selectedRange()
+
+            // If there's a selection, let default behavior handle it
+            if selectedRange.length > 0 {
+                return false
+            }
+
+            let cursorPosition = selectedRange.location
+
+            // If at start of document, nothing to delete
+            if cursorPosition == 0 {
+                return false
+            }
+
+            // Find the current line
+            let string = textStorage.string as NSString
+            var lineStart = 0
+            var lineEnd = 0
+            var contentsEnd = 0
+            string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
+
+            // Get the current line text
+            let lineRange = NSRange(location: lineStart, length: contentsEnd - lineStart)
+            let lineText = string.substring(with: lineRange)
+
+            // Check if cursor is right after a bullet point marker at the start of line
+            if cursorPosition == lineStart + 2 && lineText.hasPrefix("• ") {
+                // Remove the bullet marker
+                textStorage.beginEditing()
+                textStorage.replaceCharacters(in: NSRange(location: lineStart, length: 2), with: "")
+                textStorage.endEditing()
+                textView.setSelectedRange(NSRange(location: lineStart, length: 0))
+                return true
+            }
+
+            // Check if cursor is right after a numbered list marker
+            let numberPattern = "^(\\d+)\\. "
+            if let regex = try? NSRegularExpression(pattern: numberPattern),
+               let match = regex.firstMatch(in: lineText, range: NSRange(location: 0, length: lineText.utf16.count)) {
+                let markerLength = match.range.length
+                if cursorPosition == lineStart + markerLength {
+                    // Remove the numbered marker
+                    textStorage.beginEditing()
+                    textStorage.replaceCharacters(in: NSRange(location: lineStart, length: markerLength), with: "")
+                    textStorage.endEditing()
+                    textView.setSelectedRange(NSRange(location: lineStart, length: 0))
+                    return true
+                }
+            }
+
+            // Use default delete behavior
+            return false
+        }
+
+        private func handleReturnKey(_ textView: NSTextView) -> Bool {
+            guard let textStorage = textView.textStorage else { return false }
+
+            let cursorPosition = textView.selectedRange().location
+            guard cursorPosition <= textStorage.length else { return false }
+
+            // Find the start of the current line
+            let string = textStorage.string as NSString
+            var lineStart = 0
+            var lineEnd = 0
+            var contentsEnd = 0
+            string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
+
+            // Get the current line text
+            let lineRange = NSRange(location: lineStart, length: contentsEnd - lineStart)
+            let lineText = string.substring(with: lineRange)
+
+            // Check if line starts with bullet point
+            if lineText.hasPrefix("• ") {
+                // If line is just "• ", remove it and insert normal newline
+                if lineText.trimmingCharacters(in: .whitespaces) == "•" {
+                    textStorage.replaceCharacters(in: lineRange, with: "")
+                    return false // Let default newline behavior happen
+                }
+
+                // Insert newline and bullet
+                let attributes = textStorage.attributes(at: cursorPosition > 0 ? cursorPosition - 1 : 0, effectiveRange: nil)
+                let bullet = NSAttributedString(string: "\n• ", attributes: attributes)
+
+                textStorage.insert(bullet, at: cursorPosition)
+                textView.setSelectedRange(NSRange(location: cursorPosition + 3, length: 0))
+
+                return true // We handled it
+            }
+
+            // Check if line starts with numbered list (e.g., "1. ", "2. ", etc.)
+            let numberPattern = "^(\\d+)\\. "
+            if let regex = try? NSRegularExpression(pattern: numberPattern),
+               let match = regex.firstMatch(in: lineText, range: NSRange(location: 0, length: lineText.utf16.count)) {
+
+                // If line is just the number, remove it and insert normal newline
+                if lineText.trimmingCharacters(in: .whitespaces).hasSuffix(".") {
+                    textStorage.replaceCharacters(in: lineRange, with: "")
+                    return false
+                }
+
+                // Extract the number and increment it
+                let numberRange = match.range(at: 1)
+                let numberString = (lineText as NSString).substring(with: numberRange)
+                if let number = Int(numberString) {
+                    let nextNumber = number + 1
+                    let attributes = textStorage.attributes(at: cursorPosition > 0 ? cursorPosition - 1 : 0, effectiveRange: nil)
+                    let numberedItem = NSAttributedString(string: "\n\(nextNumber). ", attributes: attributes)
+
+                    textStorage.insert(numberedItem, at: cursorPosition)
+                    textView.setSelectedRange(NSRange(location: cursorPosition + numberedItem.length, length: 0))
+
+                    return true
+                }
+            }
+
+            return false // Not a list, use default behavior
         }
     }
 }
