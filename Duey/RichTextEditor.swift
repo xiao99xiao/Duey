@@ -33,10 +33,15 @@ struct RichTextEditor: View {
                     .cornerRadius(8)
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                     .padding(.bottom, 12)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(
+                        .asymmetric(
+                            insertion: .offset(y: 10).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
+                            removal: .offset(y: 8).combined(with: .opacity).combined(with: .scale(scale: 0.98))
+                        )
+                    )
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: hasSelection)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: hasSelection)
     }
 
     // MARK: - Selection State
