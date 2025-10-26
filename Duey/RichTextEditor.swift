@@ -477,8 +477,77 @@ struct ListContinuationHandler: NSViewRepresentable {
                     }
                 }
 
+                // Check for Space key (auto-convert -, *, or 1. to list)
+                if event.keyCode == 49 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
+                    if self.handleSpaceKey(textView) {
+                        return nil // Event handled, don't propagate
+                    }
+                }
+
                 return event // Let event propagate normally
             }
+        }
+
+        private func handleSpaceKey(_ textView: NSTextView) -> Bool {
+            guard let textStorage = textView.textStorage else { return false }
+
+            let cursorPosition = textView.selectedRange().location
+
+            // Need at least one character before cursor
+            guard cursorPosition > 0 else { return false }
+
+            let string = textStorage.string as NSString
+
+            // Find the start of the current line
+            var lineStart = 0
+            var lineEnd = 0
+            var contentsEnd = 0
+            string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
+
+            // Get the text from line start to cursor
+            let textBeforeCursor = string.substring(with: NSRange(location: lineStart, length: cursorPosition - lineStart))
+
+            // Check for numbered list pattern (e.g., "1.", "2.", etc.)
+            let numberPattern = "^(\\d+)\\.$"
+            if let regex = try? NSRegularExpression(pattern: numberPattern),
+               regex.firstMatch(in: textBeforeCursor, range: NSRange(location: 0, length: textBeforeCursor.utf16.count)) != nil {
+                // It's already formatted as "1." - just insert a space after it
+                let attributes = textStorage.attributes(at: cursorPosition - 1, effectiveRange: nil)
+
+                textStorage.beginEditing()
+                textStorage.insert(NSAttributedString(string: " ", attributes: attributes), at: cursorPosition)
+                textStorage.endEditing()
+
+                // Move cursor after the space
+                textView.setSelectedRange(NSRange(location: cursorPosition + 1, length: 0))
+
+                return true
+            }
+
+            // Check if cursor is right after the first character of the line
+            guard cursorPosition == lineStart + 1 else { return false }
+
+            // Get the character before cursor
+            let charBeforeCursor = string.character(at: cursorPosition - 1)
+            let char = Character(UnicodeScalar(charBeforeCursor)!)
+
+            // Check if it's - or *
+            if char == "-" || char == "*" {
+                // Get current attributes
+                let attributes = textStorage.attributes(at: cursorPosition - 1, effectiveRange: nil)
+
+                // Replace the character with bullet and space
+                textStorage.beginEditing()
+                textStorage.replaceCharacters(in: NSRange(location: cursorPosition - 1, length: 1), with: "• ")
+                textStorage.endEditing()
+
+                // Move cursor after the bullet and space
+                textView.setSelectedRange(NSRange(location: cursorPosition + 1, length: 0))
+
+                return true
+            }
+
+            return false
         }
 
         private func handleDeleteKey(_ textView: NSTextView) -> Bool {
