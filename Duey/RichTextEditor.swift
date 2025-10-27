@@ -31,6 +31,12 @@ struct RichTextEditor: View {
                     // Add markdown copy support
                     MarkdownCopyHandler()
                 )
+                .safeAreaInset(edge: .bottom) {
+                    // Reserve space for floating toolbar when visible
+                    if hasSelection {
+                        Color.clear.frame(height: 70)
+                    }
+                }
 
             // Formatting Toolbar (appears when text is selected)
             if hasSelection {
