@@ -17,7 +17,7 @@ struct RichTextEditor: View {
     @State private var linkText = ""
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .bottom) {
             // Text Editor
             TextEditor(text: $text, selection: $selection)
                 .font(.body)
