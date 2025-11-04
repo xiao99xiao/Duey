@@ -43,6 +43,9 @@ struct DueyApp: App {
                 }
                 .keyboardShortcut("n", modifiers: .command)
             }
+
+            // Add text formatting commands (Bold, Italic, Underline, etc.)
+            TextFormattingCommands()
         }
     }
     
