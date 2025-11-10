@@ -54,6 +54,51 @@ struct GeneralSettingsTab: View {
                 Toggle("Start Duey at login", isOn: $appSettings.startAtLogin)
                     .help("Automatically launch Duey when you log in to your Mac")
             }
+
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "list.bullet.rectangle")
+                            .foregroundStyle(.blue)
+                            .font(.title3)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Auto-List Formatting")
+                                .font(.headline)
+                            Text("Automatic conversion while typing")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Type '- ' or '* ' then space to create bullet lists", systemImage: "circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Label("Type '1. ' then space to create numbered lists", systemImage: "list.number")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Label("Press Enter to continue lists automatically", systemImage: "return")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Label("Press Tab to indent, Shift+Tab to outdent", systemImage: "increase.indent")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("Use the formatting toolbar when text is selected for additional options")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .italic()
+                }
+            } header: {
+                Text("Rich Text Editor")
+            }
         }
         .formStyle(.grouped)
         .padding(20)
