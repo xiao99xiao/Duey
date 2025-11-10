@@ -18,6 +18,9 @@ final class Task {
     var createdAt: Date = Date()
     var completedAt: Date?
 
+    // Old property for backward compatibility - kept for migration from markdown to RTF
+    var content: String?
+
     init(
         title: String = "",
         contentData: Data? = nil,
@@ -71,22 +74,27 @@ final class Task {
     // Computed property to work with AttributedString
     var attributedContent: AttributedString {
         get {
-            guard let data = contentData else {
-                return AttributedString("")
+            // First try to load from new RTF data
+            if let data = contentData {
+                do {
+                    let nsAttributedString = try NSAttributedString(
+                        data: data,
+                        options: [.documentType: NSAttributedString.DocumentType.rtf],
+                        documentAttributes: nil
+                    )
+                    return AttributedString(nsAttributedString)
+                } catch {
+                    print("Error loading RTF data: \(error)")
+                }
             }
 
-            // Try to load from RTF data
-            do {
-                let nsAttributedString = try NSAttributedString(
-                    data: data,
-                    options: [.documentType: NSAttributedString.DocumentType.rtf],
-                    documentAttributes: nil
-                )
-                return AttributedString(nsAttributedString)
-            } catch {
-                print("Error loading RTF data: \(error)")
-                return AttributedString("")
+            // Fall back to old markdown content field if it exists
+            if let oldContent = content, !oldContent.isEmpty {
+                return AttributedString(oldContent)
             }
+
+            // Return empty if both are nil
+            return AttributedString("")
         }
         set {
             // Convert AttributedString to RTF Data
@@ -144,4 +152,5 @@ final class Task {
         components.second = 0
         return calendar.date(from: components) ?? date
     }
+
 }

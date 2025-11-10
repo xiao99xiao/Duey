@@ -15,16 +15,16 @@ struct DueyApp: App {
 
     var body: some Scene {
         mainWindow
-        
+
         taskSuggestionWindow
-        
+
         menuBarExtra
-        
+
         Settings {
             SettingsView()
         }
     }
-    
+
     @SceneBuilder
     private var mainWindow: some Scene {
         Window("Duey", id: "main") {
@@ -65,7 +65,7 @@ struct DueyApp: App {
         .windowResizability(.contentSize)
         .modelContainer(for: Task.self)
     }
-    
+
     @SceneBuilder
     private var menuBarExtra: some Scene {
         MenuBarExtra("Duey", systemImage: "checklist") {
