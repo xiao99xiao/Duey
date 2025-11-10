@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86A8D2EA4D94F008C06D2 /* MarkdownUI */; };
-		88D86A912EA4D95F008C06D2 /* HighlightedTextEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */; };
 		88D86AA42EA532CF008C06D2 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */; };
 		88D86AB42EA53854008C06D2 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88D86AB32EA53854008C06D2 /* WidgetKit.framework */; };
 		88D86AB62EA53854008C06D2 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88D86AB52EA53854008C06D2 /* SwiftUI.framework */; };
@@ -105,7 +104,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				88D86A912EA4D95F008C06D2 /* HighlightedTextEditor in Frameworks */,
 				88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */,
 				88D86AA42EA532CF008C06D2 /* KeyboardShortcuts in Frameworks */,
 			);
@@ -188,7 +186,6 @@
 			name = Duey;
 			packageProductDependencies = (
 				88D86A8D2EA4D94F008C06D2 /* MarkdownUI */,
-				88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */,
 				88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */,
 			);
 			productName = Duey;
@@ -203,7 +200,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					88D86AB02EA53853008C06D2 = {
 						CreatedOnToolsVersion = 26.0.1;
@@ -224,7 +221,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
-				88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */,
 				88D86AA22EA532CF008C06D2 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -289,6 +285,7 @@
 				CODE_SIGN_ENTITLEMENTS = TaskListExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CNVBGR2V76;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -323,6 +320,7 @@
 				CODE_SIGN_ENTITLEMENTS = TaskListExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CNVBGR2V76;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -383,6 +381,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = CNVBGR2V76;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -408,6 +407,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -447,6 +447,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CNVBGR2V76;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -465,6 +466,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -478,6 +480,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 3;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CNVBGR2V76;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -524,6 +527,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 3;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CNVBGR2V76;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -602,14 +606,6 @@
 				minimumVersion = 2.4.1;
 			};
 		};
-		88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/kyle-n/HighlightedTextEditor";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.1.2;
-			};
-		};
 		88D86AA22EA532CF008C06D2 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
@@ -625,11 +621,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
 			productName = MarkdownUI;
-		};
-		88D86A902EA4D95F008C06D2 /* HighlightedTextEditor */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 88D86A8F2EA4D95F008C06D2 /* XCRemoteSwiftPackageReference "HighlightedTextEditor" */;
-			productName = HighlightedTextEditor;
 		};
 		88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */ = {
 			isa = XCSwiftPackageProductDependency;

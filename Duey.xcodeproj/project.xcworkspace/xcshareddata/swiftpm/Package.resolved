@@ -1,15 +1,6 @@
 {
-  "originHash" : "f0260782408be75b2e8a84994f1f1825a75a835297a94c82f6546ebb8f69078d",
+  "originHash" : "607bf781f4c6295d125060d91b6f77a40fcf9ba509b13727e20931adc06298ab",
   "pins" : [
-    {
-      "identity" : "highlightedtexteditor",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/kyle-n/HighlightedTextEditor",
-      "state" : {
-        "revision" : "759d7b4bd2c10d0bbe93bc62d68572a3702049e3",
-        "version" : "2.1.2"
-      }
-    },
     {
       "identity" : "keyboardshortcuts",
       "kind" : "remoteSourceControl",
@@ -33,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark",
       "state" : {
-        "revision" : "b97d09472e847a416629f026eceae0e2afcfad65",
-        "version" : "0.7.0"
+        "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
+        "version" : "0.7.1"
       }
     },
     {

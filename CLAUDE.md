@@ -11,7 +11,6 @@ Duey is a macOS todo management application built with SwiftUI and SwiftData. It
 - **Data Persistence**: SwiftData with CloudKit sync
 - **Platform**: macOS (minimum deployment target: macOS 26.0)
 - **Development Environment**: Xcode 26.0.1
-- **Markdown**: For task content editing and rendering
 
 ## Build Commands
 ```bash
@@ -26,19 +25,12 @@ open Duey.xcodeproj
 # Then use ⌘+R to run
 ```
 
-## Dependencies
-Add this Swift Package Manager dependency via Xcode:
-- **HighlightedTextEditor**: `https://github.com/kyle-n/HighlightedTextEditor` (version 2.1.0+)
-  - For markdown syntax highlighting in the editor
-
-To add: File → Add Package Dependencies in Xcode
-
 ## Architecture
 The app follows a SwiftUI + SwiftData architecture with CloudKit sync:
 
 - **DueyApp.swift**: App entry point that configures the SwiftData model container with CloudKit
 - **ContentView.swift**: Main UI implementing NavigationSplitView for master-detail interface
-- **Task Model**: SwiftData model with title, content (markdown), deadline, completion status, and timestamps
+- **Task Model**: SwiftData model with title, content (rich text/RTF), deadline, completion status, and timestamps
 
 The app uses SwiftData's automatic persistence with CloudKit sync. Views access data through SwiftUI's Query property wrapper and modify it through the ModelContext.
 
@@ -46,7 +38,7 @@ The app uses SwiftData's automatic persistence with CloudKit sync. Views access 
 
 ### Task Model
 - **Title**: Required, supports multiline display
-- **Content**: Optional, stored as markdown text
+- **Content**: Optional, stored as rich text (RTF Data)
 - **Deadline**: Optional Date + Time (defaults to 18:00 if time not specified)
 - **Status**: Unfinished or Done
 - **Timestamps**: Creation time, completion time (when marked done)
@@ -59,7 +51,7 @@ The app uses SwiftData's automatic persistence with CloudKit sync. Views access 
 
 ### Main Content Area (Task Detail)
 - **Header**: Task title (top), deadline picker (right side)
-- **Content Editor**: Markdown editor with live preview
+- **Content Editor**: Rich text editor with formatting toolbar (bold, italic, underline, lists, links)
 - **Auto-save**: All changes save automatically
 - **Bottom Float Region**:
   - For unfinished tasks: "Mark as Done" button
@@ -74,7 +66,10 @@ The app uses SwiftData's automatic persistence with CloudKit sync. Views access 
 
 ## Key Implementation Details
 - All data syncs via CloudKit for cross-device access
-- Markdown rendering for task content
+- Rich text editing with AttributedString and RTF Data storage
+- Floating formatting toolbar that appears on text selection
+- Text formatting keyboard shortcuts (⌘B, ⌘I, ⌘U) via TextFormattingCommands
+- Auto-list continuation and markdown-style list conversion (-, *, 1.)
 - Calendar/time picker for deadline selection
 - Reactive UI updates through SwiftData/SwiftUI integration
 - Proper state management for task creation/deletion flow
