@@ -623,8 +623,6 @@ struct ListContinuationHandler: NSViewRepresentable {
 
             // Check if it's - or *
             if char == "-" || char == "*" {
-                // Get current attributes
-                let attributes = textStorage.attributes(at: cursorPosition - 1, effectiveRange: nil)
 
                 // Replace the character with bullet and space
                 textStorage.beginEditing()
