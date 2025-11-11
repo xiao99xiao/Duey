@@ -7,9 +7,11 @@
 
 import SwiftUI
 import KeyboardShortcuts
+import SwiftData
 
 struct SettingsView: View {
     @StateObject private var appSettings = AppSettings()
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         TabView {
@@ -24,8 +26,20 @@ struct SettingsView: View {
                     Label("Smart Capture", systemImage: "brain.head.profile")
                 }
                 .tag("smart_capture")
+
+            DiagnosticsView(modelContext: modelContext)
+                .tabItem {
+                    Label("Diagnostics", systemImage: "stethoscope")
+                }
+                .tag("diagnostics")
+
+            TroubleshootingTab(modelContext: modelContext)
+                .tabItem {
+                    Label("Troubleshooting", systemImage: "wrench.and.screwdriver")
+                }
+                .tag("troubleshooting")
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 700, height: 650)
     }
 }
 
@@ -304,6 +318,84 @@ struct SmartTaskCaptureSettingsTab: View {
     }
 }
 
+struct TroubleshootingTab: View {
+    let modelContext: ModelContext
+
+    @State private var isCleaningDuplicates = false
+    @State private var cleanupMessage: String?
+
+    var body: some View {
+        Form {
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "wrench.and.screwdriver")
+                            .foregroundStyle(.orange)
+                            .font(.title2)
+
+                        Text("Troubleshooting")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                    }
+
+                    Text("Tools to fix common issues")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("Duplicate Tasks") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("If you see duplicate tasks, use this tool to clean them up.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button(action: cleanupDuplicates) {
+                        HStack {
+                            if isCleaningDuplicates {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .padding(.trailing, 4)
+                            }
+                            Text("Remove Duplicate Tasks")
+                        }
+                    }
+                    .disabled(isCleaningDuplicates)
+                    .buttonStyle(.borderedProminent)
+
+                    if let message = cleanupMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .padding(.top, 4)
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding(20)
+    }
+
+    private func cleanupDuplicates() {
+        isCleaningDuplicates = true
+        cleanupMessage = nil
+
+        _Concurrency.Task { @MainActor in
+            do {
+                try DuplicateCleanup.removeDuplicates(modelContext: modelContext)
+                cleanupMessage = "✓ Duplicate cleanup completed"
+            } catch {
+                cleanupMessage = "Error: \(error.localizedDescription)"
+            }
+            isCleaningDuplicates = false
+
+            // Clear message after 5 seconds
+            try? await _Concurrency.Task.sleep(for: .seconds(5))
+            cleanupMessage = nil
+        }
+    }
+}
+
 extension Notification.Name {
     static let smartTaskCaptureSettingsChanged = Notification.Name("smartTaskCaptureSettingsChanged")
 }
@@ -311,4 +403,5 @@ extension Notification.Name {
 
 #Preview {
     SettingsView()
+        .modelContainer(for: Task.self, inMemory: true)
 }

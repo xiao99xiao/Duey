@@ -18,9 +18,6 @@ final class Task {
     var createdAt: Date = Date()
     var completedAt: Date?
 
-    // Old property for backward compatibility - kept for migration from markdown to RTF
-    var content: String?
-
     init(
         title: String = "",
         contentData: Data? = nil,
@@ -51,30 +48,10 @@ final class Task {
         self.completedAt = completedAt
     }
 
-    // Convenience initializer for creating tasks from plain text/markdown
-    convenience init(
-        title: String = "",
-        content: String? = nil,
-        deadline: Date? = nil,
-        isCompleted: Bool = false
-    ) {
-        self.init(
-            title: title,
-            contentData: nil,
-            deadline: deadline,
-            isCompleted: isCompleted
-        )
-
-        // Convert plain text to AttributedString if provided
-        if let contentString = content, !contentString.isEmpty {
-            self.attributedContent = AttributedString(contentString)
-        }
-    }
-
     // Computed property to work with AttributedString
     var attributedContent: AttributedString {
         get {
-            // First try to load from new RTF data
+            // Try to load from RTF data
             if let data = contentData {
                 do {
                     let nsAttributedString = try NSAttributedString(
@@ -88,12 +65,7 @@ final class Task {
                 }
             }
 
-            // Fall back to old markdown content field if it exists
-            if let oldContent = content, !oldContent.isEmpty {
-                return AttributedString(oldContent)
-            }
-
-            // Return empty if both are nil
+            // Return empty if no data
             return AttributedString("")
         }
         set {

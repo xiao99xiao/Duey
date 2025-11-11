@@ -159,8 +159,6 @@ struct ContentView: View {
                 createdAt: deletedTask.createdAt,
                 completedAt: deletedTask.completedAt
             )
-            // Also restore old content field if it exists (for backward compatibility)
-            restoredTask.content = deletedTask.content
 
             modelContext.insert(restoredTask)
             selectedTask = restoredTask
