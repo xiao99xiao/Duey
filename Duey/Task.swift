@@ -18,6 +18,11 @@ final class Task {
     var createdAt: Date = Date()
     var completedAt: Date?
 
+    // DEPRECATED: Keep for CloudKit schema compatibility only
+    // CloudKit schema still has this field and will crash if we remove it completely
+    // This field is never used in the app - all content is stored in contentData as RTF
+    var content: String?
+
     init(
         title: String = "",
         contentData: Data? = nil,
@@ -63,6 +68,11 @@ final class Task {
                 } catch {
                     print("Error loading RTF data: \(error)")
                 }
+            }
+
+            // Fallback: Check old content field for backward compatibility
+            if let oldContent = content, !oldContent.isEmpty {
+                return AttributedString(oldContent)
             }
 
             // Return empty if no data
