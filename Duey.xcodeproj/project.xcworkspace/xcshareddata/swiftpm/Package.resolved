@@ -1,5 +1,5 @@
 {
-  "originHash" : "607bf781f4c6295d125060d91b6f77a40fcf9ba509b13727e20931adc06298ab",
+  "originHash" : "5929f1249d82386915f88b7a40ce0244eaba8fee801ca05574747756394f15ef",
   "pins" : [
     {
       "identity" : "keyboardshortcuts",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "1aef85578fdd4f9eaeeb8d53b7b4fc31bf08fe27",
         "version" : "2.4.0"
+      }
+    },
+    {
+      "identity" : "markdowntoattributedstring",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/madebywindmill/MarkdownToAttributedString",
+      "state" : {
+        "branch" : "main",
+        "revision" : "5996fba9506e82cdec13dea665f7e8a338eca188"
       }
     },
     {
@@ -22,10 +31,19 @@
     {
       "identity" : "swift-cmark",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-cmark",
+      "location" : "https://github.com/swiftlang/swift-cmark.git",
       "state" : {
-        "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
-        "version" : "0.7.1"
+        "branch" : "gfm",
+        "revision" : "924936d0427cb25a61169739a7660230bffa6ea6"
+      }
+    },
+    {
+      "identity" : "swift-markdown",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-markdown.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "f7a559ec0d1f4a6a31b82187b5cdf97c632f68f6"
       }
     },
     {

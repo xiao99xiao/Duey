@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		883D768A2EC8709300A13596 /* MarkdownToAttributedString in Frameworks */ = {isa = PBXBuildFile; productRef = 883D76892EC8709300A13596 /* MarkdownToAttributedString */; };
 		88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86A8D2EA4D94F008C06D2 /* MarkdownUI */; };
 		88D86AA42EA532CF008C06D2 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */; };
 		88D86AB42EA53854008C06D2 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88D86AB32EA53854008C06D2 /* WidgetKit.framework */; };
@@ -105,6 +106,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				88D86A8E2EA4D94F008C06D2 /* MarkdownUI in Frameworks */,
+				883D768A2EC8709300A13596 /* MarkdownToAttributedString in Frameworks */,
 				88D86AA42EA532CF008C06D2 /* KeyboardShortcuts in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -187,6 +189,7 @@
 			packageProductDependencies = (
 				88D86A8D2EA4D94F008C06D2 /* MarkdownUI */,
 				88D86AA32EA532CF008C06D2 /* KeyboardShortcuts */,
+				883D76892EC8709300A13596 /* MarkdownToAttributedString */,
 			);
 			productName = Duey;
 			productReference = 88EABF5F2EA4CA7B00D61873 /* Duey.app */;
@@ -222,6 +225,7 @@
 			packageReferences = (
 				88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				88D86AA22EA532CF008C06D2 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				883D76882EC8709300A13596 /* XCRemoteSwiftPackageReference "MarkdownToAttributedString" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 88EABF602EA4CA7B00D61873 /* Products */;
@@ -598,6 +602,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		883D76882EC8709300A13596 /* XCRemoteSwiftPackageReference "MarkdownToAttributedString" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/madebywindmill/MarkdownToAttributedString";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
@@ -617,6 +629,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		883D76892EC8709300A13596 /* MarkdownToAttributedString */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 883D76882EC8709300A13596 /* XCRemoteSwiftPackageReference "MarkdownToAttributedString" */;
+			productName = MarkdownToAttributedString;
+		};
 		88D86A8D2EA4D94F008C06D2 /* MarkdownUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 88D86A8C2EA4D94F008C06D2 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;

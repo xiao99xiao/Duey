@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import MarkdownToAttributedString
 
 struct RichTextEditorView: View {
     @Bindable var task: Task
@@ -19,18 +20,16 @@ struct RichTextEditorView: View {
                 .padding(12)
                 .onAppear {
                     if !hasLoaded {
-                        // Load from model when view appears - parse markdown
+                        // Load from model when view appears - parse markdown using library
                         if let markdown = task.content, !markdown.isEmpty {
-                            do {
-                                // Use .inlineOnlyPreservingWhitespace to preserve line breaks
-                                editingText = try AttributedString(
-                                    markdown: markdown,
-                                    options: AttributedString.MarkdownParsingOptions(
-                                        interpretedSyntax: .inlineOnlyPreservingWhitespace
-                                    )
-                                )
-                            } catch {
-                                // Fallback to plain text if markdown parsing fails
+                            // Use MarkdownToAttributedString library for better parsing
+                            let nsAttributedString = AttributedStringFormatter.format(markdown: markdown)
+
+                            // Convert NSAttributedString to SwiftUI AttributedString
+                            if let swiftUIAttributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
+                                editingText = swiftUIAttributedString
+                            } else {
+                                // Fallback to plain text
                                 editingText = AttributedString(markdown)
                             }
                         } else {
