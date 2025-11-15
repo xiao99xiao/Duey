@@ -459,14 +459,22 @@ struct ListContinuationHandler: NSViewRepresentable {
         private func findTextView(in view: NSView?) -> NSTextView? {
             guard let view = view else { return nil }
 
-            if let textView = view as? NSTextView {
+            // Prioritize finding SwiftUI's AttributedPlatformTextView
+            if let textView = view as? NSTextView,
+               String(describing: type(of: textView)).contains("AttributedPlatformTextView") {
                 return textView
             }
 
+            // Search children first (depth-first to find the most nested one)
             for subview in view.subviews {
                 if let textView = findTextView(in: subview) {
                     return textView
                 }
+            }
+
+            // Fallback: accept any NSTextView
+            if let textView = view as? NSTextView {
+                return textView
             }
 
             return nil
@@ -887,14 +895,22 @@ struct MarkdownCopyHandler: NSViewRepresentable {
         private func findTextView(in view: NSView?) -> NSTextView? {
             guard let view = view else { return nil }
 
-            if let textView = view as? NSTextView {
+            // Prioritize finding SwiftUI's AttributedPlatformTextView
+            if let textView = view as? NSTextView,
+               String(describing: type(of: textView)).contains("AttributedPlatformTextView") {
                 return textView
             }
 
+            // Search children first (depth-first to find the most nested one)
             for subview in view.subviews {
                 if let textView = findTextView(in: subview) {
                     return textView
                 }
+            }
+
+            // Fallback: accept any NSTextView
+            if let textView = view as? NSTextView {
+                return textView
             }
 
             return nil
