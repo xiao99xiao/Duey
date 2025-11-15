@@ -397,8 +397,10 @@ struct ListContinuationHandler: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        if context.coordinator.textView == nil {
-            DispatchQueue.main.async {
+        // Always try to re-find the textView to handle view recreation
+        DispatchQueue.main.async {
+            // Check if current textView is still valid (has a window)
+            if context.coordinator.textView?.window == nil {
                 context.coordinator.findAndSetupTextView(from: nsView)
             }
         }
@@ -795,8 +797,10 @@ struct MarkdownCopyHandler: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        if context.coordinator.textView == nil {
-            DispatchQueue.main.async {
+        // Always try to re-find the textView to handle view recreation
+        DispatchQueue.main.async {
+            // Check if current textView is still valid (has a window)
+            if context.coordinator.textView?.window == nil {
                 context.coordinator.findAndSetupTextView(from: nsView)
             }
         }
