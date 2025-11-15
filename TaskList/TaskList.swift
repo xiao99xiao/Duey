@@ -54,7 +54,7 @@ struct TaskProvider: TimelineProvider {
     private func fetchUnfinishedTasks() async -> [TaskInfo] {
         do {
             // Use CloudKit configuration to access same data as main app
-            let schema = Schema([TaskSchemaV2.self])
+            let schema = Schema([Task.self])
             var modelContainer: ModelContainer?
 
             // First attempt: with CloudKit (same as main app)
@@ -80,8 +80,8 @@ struct TaskProvider: TimelineProvider {
 
             let context = ModelContext(container)
 
-            let descriptor = FetchDescriptor<TaskSchemaV2>(
-                predicate: #Predicate<TaskSchemaV2> { !$0.isCompleted }
+            let descriptor = FetchDescriptor<Task>(
+                predicate: #Predicate<Task> { !$0.isCompleted }
             )
 
             let tasks = try context.fetch(descriptor)
