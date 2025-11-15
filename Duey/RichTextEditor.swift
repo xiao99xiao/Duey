@@ -461,9 +461,11 @@ struct ListContinuationHandler: NSViewRepresentable {
         private func findTextView(in view: NSView?) -> NSTextView? {
             guard let view = view else { return nil }
 
-            // Prioritize finding SwiftUI's AttributedPlatformTextView
+            let typeName = String(describing: type(of: view))
+
+            // Prioritize finding SwiftUI's AttributedPlatformTextView (exact match)
             if let textView = view as? NSTextView,
-               String(describing: type(of: textView)).contains("AttributedPlatformTextView") {
+               typeName == "AttributedPlatformTextView" {
                 return textView
             }
 
@@ -474,9 +476,11 @@ struct ListContinuationHandler: NSViewRepresentable {
                 }
             }
 
-            // Fallback: accept any NSTextView
+            // Fallback: accept any NSTextView, but prefer ones with "Attributed" in name
             if let textView = view as? NSTextView {
-                return textView
+                if typeName.contains("Attributed") {
+                    return textView
+                }
             }
 
             return nil
@@ -897,9 +901,11 @@ struct MarkdownCopyHandler: NSViewRepresentable {
         private func findTextView(in view: NSView?) -> NSTextView? {
             guard let view = view else { return nil }
 
-            // Prioritize finding SwiftUI's AttributedPlatformTextView
+            let typeName = String(describing: type(of: view))
+
+            // Prioritize finding SwiftUI's AttributedPlatformTextView (exact match)
             if let textView = view as? NSTextView,
-               String(describing: type(of: textView)).contains("AttributedPlatformTextView") {
+               typeName == "AttributedPlatformTextView" {
                 return textView
             }
 
@@ -910,9 +916,11 @@ struct MarkdownCopyHandler: NSViewRepresentable {
                 }
             }
 
-            // Fallback: accept any NSTextView
+            // Fallback: accept any NSTextView, but prefer ones with "Attributed" in name
             if let textView = view as? NSTextView {
-                return textView
+                if typeName.contains("Attributed") {
+                    return textView
+                }
             }
 
             return nil
