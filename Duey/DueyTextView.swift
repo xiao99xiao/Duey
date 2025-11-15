@@ -13,6 +13,15 @@ class DueyTextView: NSTextView {
     // MARK: - Key Event Handling
 
     override func keyDown(with event: NSEvent) {
+        // Handle Command+Shift+L - insert checkbox
+        if event.keyCode == 37 && // 'L' key
+           event.modifierFlags.contains(.command) &&
+           event.modifierFlags.contains(.shift) &&
+           !event.modifierFlags.contains(.option) {
+            insertCheckbox()
+            return // Event handled
+        }
+
         // Handle Space key - auto-convert -, *, or 1. to list
         if event.keyCode == 49 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
             if handleSpaceKey() {
