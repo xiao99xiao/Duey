@@ -389,22 +389,15 @@ struct ListContinuationHandler: NSViewRepresentable {
         let view = NSView()
         view.isHidden = true
 
-        DispatchQueue.main.async {
-            context.coordinator.findAndSetupTextView(from: view)
-        }
+        // Use DispatchQueue with retry instead of Timer for better reliability
+        context.coordinator.startFindingTextView(from: view)
 
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        // Always try to re-find the textView to handle view recreation
-        DispatchQueue.main.async {
-            // Check if current textView is still valid (has a window)
-            if context.coordinator.textView?.window == nil {
-                print("📝 List continuation: TextView lost window, reconnecting...")
-                context.coordinator.findAndSetupTextView(from: nsView)
-            }
-        }
+        // Don't try to reconnect in updateNSView - let makeNSView handle it
+        // when a truly new view is created
     }
 
     func makeCoordinator() -> Coordinator {
@@ -415,7 +408,6 @@ struct ListContinuationHandler: NSViewRepresentable {
         @Binding var text: AttributedString
         weak var textView: NSTextView?
         private var eventMonitor: Any?
-        private var retryTimer: Timer?
 
         init(text: Binding<AttributedString>) {
             self._text = text
@@ -426,37 +418,38 @@ struct ListContinuationHandler: NSViewRepresentable {
             if let monitor = eventMonitor {
                 NSEvent.removeMonitor(monitor)
             }
-            retryTimer?.invalidate()
         }
 
-        func findAndSetupTextView(from view: NSView, retryCount: Int = 0) {
-            // Invalidate any existing retry timer
-            retryTimer?.invalidate()
-            retryTimer = nil
+        func startFindingTextView(from view: NSView) {
+            print("📝 List continuation: Starting search for NSTextView")
+            findAndSetupTextView(from: view, retryCount: 0)
+        }
 
+        private func findAndSetupTextView(from view: NSView, retryCount: Int) {
             var currentView: NSView? = view
             while let v = currentView {
                 if let window = v.window {
                     if let textView = findTextView(in: window.contentView) {
                         self.textView = textView
                         setupKeyEventMonitor()
-                        print("📝 List continuation: Found and connected to NSTextView")
+                        print("📝 List continuation: ✅ Found and connected to NSTextView (attempt \(retryCount + 1))")
                         return
                     }
                 }
                 currentView = v.superview
             }
 
-            // Couldn't find textView - retry up to 5 times with 100ms delay
-            if retryCount < 5 {
-                print("⚠️ List continuation: Could not find NSTextView, retry \(retryCount + 1)/5")
-                retryTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self, weak view] _ in
-                    if let view = view {
-                        self?.findAndSetupTextView(from: view, retryCount: retryCount + 1)
-                    }
+            // Couldn't find textView - retry up to 10 times with increasing delay
+            if retryCount < 10 {
+                let delay = 0.05 * Double(retryCount + 1) // Increase delay: 50ms, 100ms, 150ms...
+                print("⚠️ List continuation: Could not find NSTextView, retry \(retryCount + 1)/10 (waiting \(Int(delay * 1000))ms)")
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak view] in
+                    guard let self = self, let view = view else { return }
+                    self.findAndSetupTextView(from: view, retryCount: retryCount + 1)
                 }
             } else {
-                print("❌ List continuation: Failed to find NSTextView after 5 retries")
+                print("❌ List continuation: Failed to find NSTextView after 10 retries")
             }
         }
 
@@ -829,21 +822,13 @@ struct MarkdownCopyHandler: NSViewRepresentable {
         let view = NSView()
         view.isHidden = true
 
-        DispatchQueue.main.async {
-            context.coordinator.findAndSetupTextView(from: view)
-        }
+        context.coordinator.startFindingTextView(from: view)
 
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        // Always try to re-find the textView to handle view recreation
-        DispatchQueue.main.async {
-            // Check if current textView is still valid (has a window)
-            if context.coordinator.textView?.window == nil {
-                context.coordinator.findAndSetupTextView(from: nsView)
-            }
-        }
+        // Don't try to reconnect in updateNSView
     }
 
     func makeCoordinator() -> Coordinator {
@@ -860,7 +845,11 @@ struct MarkdownCopyHandler: NSViewRepresentable {
             }
         }
 
-        func findAndSetupTextView(from view: NSView) {
+        func startFindingTextView(from view: NSView) {
+            findAndSetupTextView(from: view, retryCount: 0)
+        }
+
+        private func findAndSetupTextView(from view: NSView, retryCount: Int) {
             var currentView: NSView? = view
             while let v = currentView {
                 if let window = v.window {
@@ -871,6 +860,15 @@ struct MarkdownCopyHandler: NSViewRepresentable {
                     }
                 }
                 currentView = v.superview
+            }
+
+            // Retry up to 10 times with increasing delay
+            if retryCount < 10 {
+                let delay = 0.05 * Double(retryCount + 1)
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak view] in
+                    guard let self = self, let view = view else { return }
+                    self.findAndSetupTextView(from: view, retryCount: retryCount + 1)
+                }
             }
         }
 
