@@ -167,7 +167,7 @@ struct RichTextEditor: View {
 
     private var linkPopoverContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Insert Link")
+            Text("Edit Link")
                 .font(.headline)
 
             VStack(alignment: .leading, spacing: 8) {
@@ -188,6 +188,10 @@ struct RichTextEditor: View {
                     .frame(width: 250)
             }
 
+            Text("Leave URL empty to remove link")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
             HStack {
                 Button("Cancel") {
                     showLinkPopover = false
@@ -198,11 +202,10 @@ struct RichTextEditor: View {
 
                 Spacer()
 
-                Button("Insert") {
-                    insertLink()
+                Button("Update") {
+                    updateLink()
                 }
                 .keyboardShortcut(.return)
-                .disabled(linkURL.isEmpty)
             }
         }
         .padding()
@@ -389,24 +392,26 @@ struct RichTextEditor: View {
         textView.setSelectedRange(NSRange(location: range.location + number.length, length: 0))
     }
 
-    private func insertLink() {
-        guard let url = URL(string: linkURL),
-              let textView = textViewRef.textView,
+    private func updateLink() {
+        guard let textView = textViewRef.textView,
               let textStorage = textView.textStorage else { return }
 
         let range = textView.selectedRange()
+        guard range.length > 0 else {
+            // No selection, close popover
+            showLinkPopover = false
+            linkURL = ""
+            linkText = ""
+            return
+        }
 
         textStorage.beginEditing()
-        if range.length == 0 {
-            // Insert new link with provided text
-            let displayText = linkText.isEmpty ? linkURL : linkText
-            var attrs = textView.typingAttributes
-            attrs[.link] = url
-            let linkString = NSAttributedString(string: displayText, attributes: attrs)
 
-            textStorage.insert(linkString, at: range.location)
-        } else {
-            // Apply link to selected text
+        if linkURL.isEmpty {
+            // Empty URL = remove link
+            textStorage.removeAttribute(.link, range: range)
+        } else if let url = URL(string: linkURL) {
+            // Valid URL = add/update link
             textStorage.addAttribute(.link, value: url, range: range)
 
             // If link text was provided, replace the selected text
@@ -418,6 +423,7 @@ struct RichTextEditor: View {
                 textStorage.replaceCharacters(in: range, with: linkString)
             }
         }
+
         textStorage.endEditing()
 
         // Reset state
