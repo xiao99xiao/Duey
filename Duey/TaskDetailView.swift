@@ -97,6 +97,37 @@ struct TaskHeaderView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
 
             VStack(alignment: .trailing, spacing: 8) {
+                // Checkbox statistics indicator
+                if let stats = task.checkboxStats {
+                    HStack(spacing: 6) {
+                        // Circular progress indicator
+                        ZStack {
+                            Circle()
+                                .stroke(Color.secondary.opacity(0.3), lineWidth: 2)
+                                .frame(width: 16, height: 16)
+
+                            Circle()
+                                .trim(from: 0, to: stats.total > 0 ? CGFloat(stats.checked) / CGFloat(stats.total) : 0)
+                                .stroke(stats.checked == stats.total ? Color.green : Color.blue, lineWidth: 2)
+                                .frame(width: 16, height: 16)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 0.3), value: stats.checked)
+                        }
+
+                        Text("\(stats.checked)/\(stats.total)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Image(systemName: "checkmark.square")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(6)
+                }
+
                 HStack(alignment: .center, spacing: 8) {
                     Button(action: { showingDatePicker.toggle() }) {
                         HStack(spacing: 4) {
