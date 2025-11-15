@@ -45,7 +45,7 @@ struct SidebarView: View {
     }
 
     private func createNewTask() {
-        let newTask = Duey.Task(title: "", contentData: nil, deadline: nil, isCompleted: false)
+        let newTask = Duey.Task(title: "", content: nil, deadline: nil, isCompleted: false)
         modelContext.insert(newTask)
         pendingNewTask = newTask
         selectedTask = newTask

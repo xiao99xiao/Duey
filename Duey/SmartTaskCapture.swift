@@ -152,11 +152,7 @@ class SmartTaskCapture: ObservableObject {
             return
         }
 
-        let newTask = Task(title: title, contentData: nil, deadline: deadline, isCompleted: false)
-        // Set the content as attributed string if provided
-        if let content = content, !content.isEmpty {
-            newTask.attributedContent = AttributedString(content)
-        }
+        let newTask = Task(title: title, content: content, deadline: deadline, isCompleted: false)
         modelContext.insert(newTask)
 
         do {

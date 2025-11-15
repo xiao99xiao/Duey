@@ -65,7 +65,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Task.swift,
-				TaskSchemaV2.swift,
 			);
 			target = 88D86AB02EA53853008C06D2 /* TaskListExtension */;
 		};

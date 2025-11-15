@@ -312,7 +312,7 @@ struct DiagnosticsView: View {
             let exportTasks = tasks.map { task -> ExportTask in
                 ExportTask(
                     title: task.title,
-                    contentData: task.contentData?.base64EncodedString(),
+                    content: task.content,
                     deadline: task.deadline,
                     isCompleted: task.isCompleted,
                     createdAt: task.createdAt,
@@ -414,18 +414,14 @@ struct DiagnosticsView: View {
                 // Create new task
                 let newTask = Task(
                     title: exportTask.title,
-                    contentData: nil,
+                    content: exportTask.content,
                     deadline: exportTask.deadline,
-                    isCompleted: exportTask.isCompleted,
-                    createdAt: exportTask.createdAt,
-                    completedAt: exportTask.completedAt
+                    isCompleted: exportTask.isCompleted
                 )
 
-                // Restore content data if available
-                if let contentDataBase64 = exportTask.contentData,
-                   let contentData = Data(base64Encoded: contentDataBase64) {
-                    newTask.contentData = contentData
-                }
+                // Restore timestamps
+                newTask.createdAt = exportTask.createdAt
+                newTask.completedAt = exportTask.completedAt
 
                 modelContext.insert(newTask)
                 importedCount += 1
@@ -498,8 +494,8 @@ struct TaskDiagnosticRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if task.contentData != nil {
-                    Label("\(task.contentData!.count) bytes", systemImage: "doc.text")
+                if let content = task.content, !content.isEmpty {
+                    Label("\(content.count) chars", systemImage: "doc.text")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -522,7 +518,7 @@ struct ExportData: Codable {
 
 struct ExportTask: Codable {
     let title: String
-    let contentData: String?  // Base64 encoded
+    let content: String?  // Plain text content
     let deadline: Date?
     let isCompleted: Bool
     let createdAt: Date

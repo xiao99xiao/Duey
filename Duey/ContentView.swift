@@ -153,12 +153,12 @@ struct ContentView: View {
             // Create a new task with the same properties
             let restoredTask = Task(
                 title: deletedTask.title,
-                contentData: deletedTask.contentData,
+                content: deletedTask.content,
                 deadline: deletedTask.deadline,
-                isCompleted: deletedTask.isCompleted,
-                createdAt: deletedTask.createdAt,
-                completedAt: deletedTask.completedAt
+                isCompleted: deletedTask.isCompleted
             )
+            restoredTask.createdAt = deletedTask.createdAt
+            restoredTask.completedAt = deletedTask.completedAt
 
             modelContext.insert(restoredTask)
             selectedTask = restoredTask

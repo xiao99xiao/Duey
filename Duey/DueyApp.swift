@@ -18,16 +18,12 @@ struct DueyApp: App {
     @MainActor
     static let sharedModelContainer: ModelContainer = {
         do {
-            // CloudKit sync enabled - fresh start with clean schema
-            let schema = Schema([TaskSchemaV2.self])
-            let config = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: false,
-                cloudKitDatabase: .automatic  // CloudKit sync enabled
-            )
+            // Simple schema - original working version
+            let schema = Schema([Task.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             let container = try ModelContainer(for: schema, configurations: [config])
 
-            print("✅ ModelContainer created successfully with CloudKit sync enabled")
+            print("✅ ModelContainer created successfully")
 
             return container
         } catch {
