@@ -19,9 +19,19 @@ struct RichTextEditorView: View {
                 .padding(12)
                 .onAppear {
                     if !hasLoaded {
-                        // Load from model when view appears
-                        if let content = task.content {
-                            editingText = AttributedString(content)
+                        // Load from model - convert RTF to AttributedString
+                        if let rtfData = task.richContent {
+                            // Convert RTF Data → NSAttributedString
+                            if let nsAttrString = try? NSAttributedString(
+                                data: rtfData,
+                                options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                documentAttributes: nil
+                            ) {
+                                // Convert NSAttributedString → SwiftUI AttributedString
+                                editingText = (try? AttributedString(nsAttrString, including: \.appKit)) ?? AttributedString("")
+                            } else {
+                                editingText = AttributedString("")
+                            }
                         } else {
                             editingText = AttributedString("")
                         }
@@ -29,9 +39,18 @@ struct RichTextEditorView: View {
                     }
                 }
                 .onChange(of: editingText) { oldValue, newValue in
-                    // Save to model on every change
-                    // Convert AttributedString to plain String for storage
-                    task.content = String(newValue.characters)
+                    // Save to model - convert AttributedString to RTF
+                    // Convert SwiftUI AttributedString → NSAttributedString
+                    if let nsAttrString = try? NSAttributedString(newValue, including: \.appKit) {
+                        // Convert NSAttributedString → RTF Data
+                        let range = NSRange(location: 0, length: nsAttrString.length)
+                        task.richContent = try? nsAttrString.data(
+                            from: range,
+                            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+                        )
+                    } else {
+                        task.richContent = nil
+                    }
                 }
         }
     }

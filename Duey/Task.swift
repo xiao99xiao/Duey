@@ -12,7 +12,8 @@ import SwiftUI
 @Model
 final class Task {
     var title: String = ""
-    var content: String?  // Original text content field
+    var content: String?  // Deprecated - kept for CloudKit compatibility
+    var contentRTF: Data?  // New RTF formatted content
     var deadline: Date?
     var isCompleted: Bool = false
     var createdAt: Date = Date()
@@ -26,10 +27,48 @@ final class Task {
     ) {
         self.title = title
         self.content = content
+        self.contentRTF = nil
         self.deadline = deadline
         self.isCompleted = isCompleted
         self.createdAt = Date()
         self.completedAt = nil
+    }
+
+    // MARK: - Rich Content Helper
+
+    /// Unified access to content - prefers RTF, falls back to plain text
+    var richContent: Data? {
+        get {
+            // Prefer RTF if it exists
+            if let rtf = contentRTF {
+                return rtf
+            }
+
+            // Fallback: convert old plain text to RTF
+            if let plainText = content, !plainText.isEmpty {
+                let attrString = NSAttributedString(string: plainText)
+                return try? attrString.data(
+                    from: NSRange(location: 0, length: attrString.length),
+                    documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+                )
+            }
+
+            return nil
+        }
+        set {
+            contentRTF = newValue
+            // Keep content in sync for backwards compatibility (extract plain text)
+            if let rtfData = newValue,
+               let attrString = try? NSAttributedString(
+                   data: rtfData,
+                   options: [.documentType: NSAttributedString.DocumentType.rtf],
+                   documentAttributes: nil
+               ) {
+                content = attrString.string
+            } else {
+                content = nil
+            }
+        }
     }
 
     func markAsCompleted() {
