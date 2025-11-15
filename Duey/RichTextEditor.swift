@@ -258,14 +258,19 @@ struct RichTextEditor: View {
         textStorage.beginEditing()
         textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
             let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-            let newFont: NSFont
 
-            if currentFont.fontDescriptor.symbolicTraits.contains(.bold) {
-                // Remove bold
-                newFont = NSFontManager.shared.convert(currentFont, toNotHaveTrait: .boldFontMask)
+            // Get current traits and toggle bold
+            var traits = currentFont.fontDescriptor.symbolicTraits
+            if traits.contains(.bold) {
+                traits.remove(.bold)
             } else {
-                // Add bold
-                newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: .boldFontMask)
+                traits.insert(.bold)
+            }
+
+            // Create new font descriptor with updated traits, preserving size
+            guard let descriptor = currentFont.fontDescriptor.withSymbolicTraits(traits),
+                  let newFont = NSFont(descriptor: descriptor, size: currentFont.pointSize) else {
+                return
             }
 
             textStorage.addAttribute(.font, value: newFont, range: subrange)
@@ -283,14 +288,19 @@ struct RichTextEditor: View {
         textStorage.beginEditing()
         textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
             let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-            let newFont: NSFont
 
-            if currentFont.fontDescriptor.symbolicTraits.contains(.italic) {
-                // Remove italic
-                newFont = NSFontManager.shared.convert(currentFont, toNotHaveTrait: .italicFontMask)
+            // Get current traits and toggle italic
+            var traits = currentFont.fontDescriptor.symbolicTraits
+            if traits.contains(.italic) {
+                traits.remove(.italic)
             } else {
-                // Add italic
-                newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: .italicFontMask)
+                traits.insert(.italic)
+            }
+
+            // Create new font descriptor with updated traits, preserving size
+            guard let descriptor = currentFont.fontDescriptor.withSymbolicTraits(traits),
+                  let newFont = NSFont(descriptor: descriptor, size: currentFont.pointSize) else {
+                return
             }
 
             textStorage.addAttribute(.font, value: newFont, range: subrange)
