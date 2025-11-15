@@ -18,6 +18,8 @@ struct DiagnosticsView: View {
     @State private var errorMessage: String?
     @State private var isRefreshing = false
     @State private var exportDocument: JSONExportDocument?
+    @State private var isImporting = false
+    @State private var importMessage: String?
 
     var body: some View {
         ScrollView {
@@ -47,6 +49,13 @@ struct DiagnosticsView: View {
             defaultFilename: generateExportFilename()
         ) { result in
             handleExportResult(result)
+        }
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImportResult(result)
         }
         .onAppear {
             refreshData()
@@ -164,42 +173,78 @@ struct DiagnosticsView: View {
     private var exportSection: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Export Data", systemImage: "square.and.arrow.up")
+                Label("Import & Export Data", systemImage: "arrow.up.arrow.down")
                     .font(.headline)
 
                 Divider()
 
-                Text("Export all tasks to a JSON file for backup (you'll choose where to save)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                // Export Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Export")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
 
-                Button(action: exportData) {
-                    HStack {
-                        Image(systemName: "arrow.down.doc")
-                        Text("Export All Tasks to JSON")
+                    Text("Export all tasks to a JSON file for backup")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button(action: exportData) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Export All Tasks to JSON")
+                        }
+                    }
+                    .disabled(tasks.isEmpty)
+                    .buttonStyle(.borderedProminent)
+
+                    if let filePath = exportedFilePath {
+                        HStack {
+                            Text("✓ Exported to:")
+                                .foregroundStyle(.green)
+                            Text(filePath)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+
+                        Button("Show in Finder") {
+                            NSWorkspace.shared.selectFile(filePath, inFileViewerRootedAtPath: "")
+                        }
+                        .buttonStyle(.link)
                     }
                 }
-                .disabled(tasks.isEmpty)
-                .buttonStyle(.borderedProminent)
 
-                if let filePath = exportedFilePath {
-                    HStack {
-                        Text("✓ Exported to:")
-                            .foregroundStyle(.green)
-                        Text(filePath)
+                Divider()
+
+                // Import Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Import")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    Text("Import tasks from a previously exported JSON file")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button(action: { isImporting = true }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.down")
+                            Text("Import Tasks from JSON")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+
+                    if let message = importMessage {
+                        Text(message)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
+                            .foregroundStyle(message.contains("Error") ? .red : .green)
+                            .padding(.top, 4)
                     }
-
-                    Button("Show in Finder") {
-                        NSWorkspace.shared.selectFile(filePath, inFileViewerRootedAtPath: "")
-                    }
-                    .buttonStyle(.link)
                 }
 
                 if let error = errorMessage {
+                    Divider()
                     Text("Error: \(error)")
                         .foregroundStyle(.red)
                         .font(.caption)
@@ -307,6 +352,103 @@ struct DiagnosticsView: View {
         case .failure(let error):
             errorMessage = error.localizedDescription
             print("Export error: \(error)")
+        }
+    }
+
+    private func handleImportResult(_ result: Result<[URL], Error>) {
+        importMessage = nil
+        errorMessage = nil
+
+        switch result {
+        case .success(let urls):
+            guard let fileURL = urls.first else {
+                errorMessage = "No file selected"
+                return
+            }
+
+            importFromFile(fileURL)
+
+        case .failure(let error):
+            errorMessage = "Import failed: \(error.localizedDescription)"
+            print("Import error: \(error)")
+        }
+    }
+
+    private func importFromFile(_ fileURL: URL) {
+        do {
+            // Start accessing the security-scoped resource
+            guard fileURL.startAccessingSecurityScopedResource() else {
+                errorMessage = "Cannot access file"
+                return
+            }
+            defer { fileURL.stopAccessingSecurityScopedResource() }
+
+            // Read the JSON file
+            let data = try Data(contentsOf: fileURL)
+
+            // Decode the export data
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let exportData = try decoder.decode(ExportData.self, from: data)
+
+            print("Importing \(exportData.taskCount) tasks from export dated \(exportData.exportDate)")
+
+            // Track import results
+            var importedCount = 0
+            var skippedCount = 0
+
+            // Import each task
+            for exportTask in exportData.tasks {
+                // Check for duplicates (by title and createdAt)
+                let isDuplicate = tasks.contains { task in
+                    task.title == exportTask.title &&
+                    abs(task.createdAt.timeIntervalSince(exportTask.createdAt)) < 1.0
+                }
+
+                if isDuplicate {
+                    skippedCount += 1
+                    print("Skipping duplicate task: \(exportTask.title)")
+                    continue
+                }
+
+                // Create new task
+                let newTask = Task(
+                    title: exportTask.title,
+                    contentData: nil,
+                    deadline: exportTask.deadline,
+                    isCompleted: exportTask.isCompleted,
+                    createdAt: exportTask.createdAt,
+                    completedAt: exportTask.completedAt
+                )
+
+                // Restore content data if available
+                if let contentDataBase64 = exportTask.contentData,
+                   let contentData = Data(base64Encoded: contentDataBase64) {
+                    newTask.contentData = contentData
+                }
+
+                modelContext.insert(newTask)
+                importedCount += 1
+            }
+
+            // Save changes
+            try modelContext.save()
+
+            // Refresh the task list
+            refreshData()
+
+            // Show success message
+            if skippedCount > 0 {
+                importMessage = "✓ Imported \(importedCount) tasks, skipped \(skippedCount) duplicates"
+            } else {
+                importMessage = "✓ Successfully imported \(importedCount) tasks"
+            }
+
+            print("Import completed: \(importedCount) imported, \(skippedCount) skipped")
+
+        } catch {
+            errorMessage = "Import failed: \(error.localizedDescription)"
+            print("Import error: \(error)")
         }
     }
 }
