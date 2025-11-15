@@ -22,7 +22,13 @@ struct RichTextEditorView: View {
                         // Load from model when view appears - parse markdown
                         if let markdown = task.content, !markdown.isEmpty {
                             do {
-                                editingText = try AttributedString(markdown: markdown)
+                                // Use .inlineOnlyPreservingWhitespace to preserve line breaks
+                                editingText = try AttributedString(
+                                    markdown: markdown,
+                                    options: AttributedString.MarkdownParsingOptions(
+                                        interpretedSyntax: .inlineOnlyPreservingWhitespace
+                                    )
+                                )
                             } catch {
                                 // Fallback to plain text if markdown parsing fails
                                 editingText = AttributedString(markdown)
