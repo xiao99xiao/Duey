@@ -18,21 +18,18 @@ struct DueyApp: App {
     @MainActor
     static let sharedModelContainer: ModelContainer = {
         do {
-            // Use automatic lightweight migration (no explicit migration plan needed)
-            // SwiftData will automatically handle adding the new contentData column
+            // TEMPORARY: Disable CloudKit sync to allow schema migration
+            // After migration works, change cloudKitDatabase back to .automatic
             let schema = Schema([TaskSchemaV2.self])
-            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let config = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .none  // TEMPORARY: Disable CloudKit sync
+            )
             let container = try ModelContainer(for: schema, configurations: [config])
 
-            print("✅ ModelContainer created successfully with automatic migration")
-
-            // Initialize CloudKit schema to sync with server
-            // This ensures the deprecated 'content' field is properly registered in CloudKit
-            // IMPORTANT: Run this ONCE after model changes, then comment out
-            #if DEBUG
-            // TODO: Uncomment the line below, run the app once, then comment it out again
-            // try? initializeCloudKitSchema(for: container)
-            #endif
+            print("✅ ModelContainer created successfully (CloudKit DISABLED temporarily)")
+            print("⚠️  CloudKit sync is disabled - change cloudKitDatabase to .automatic after migration")
 
             return container
         } catch {
