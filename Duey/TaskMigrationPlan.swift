@@ -54,6 +54,3 @@ extension TaskSchemaV2: VersionedSchema {
         [TaskSchemaV2.self]
     }
 }
-
-// Type alias for current version
-typealias Task = TaskSchemaV2
