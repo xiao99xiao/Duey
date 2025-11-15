@@ -14,17 +14,17 @@ struct DueyApp: App {
     @StateObject private var smartTaskCapture = SmartTaskCapture()
     @StateObject private var appSettings = AppSettings()
 
-    // Shared model container with migration support
+    // Shared model container with automatic lightweight migration
     @MainActor
     static let sharedModelContainer: ModelContainer = {
         do {
-            // Use the migration plan to handle schema changes
-            let container = try ModelContainer(
-                for: Task.self,
-                migrationPlan: TaskMigrationPlan.self
-            )
+            // Use automatic lightweight migration (no explicit migration plan needed)
+            // SwiftData will automatically handle adding the new contentData column
+            let schema = Schema([TaskSchemaV2.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let container = try ModelContainer(for: schema, configurations: [config])
 
-            print("✅ ModelContainer created successfully with migration support")
+            print("✅ ModelContainer created successfully with automatic migration")
 
             // Initialize CloudKit schema to sync with server
             // This ensures the deprecated 'content' field is properly registered in CloudKit

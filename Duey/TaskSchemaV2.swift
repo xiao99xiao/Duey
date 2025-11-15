@@ -2,7 +2,8 @@
 //  TaskSchemaV2.swift
 //  Duey
 //
-//  Schema version 2 - Current Task model with contentData
+//  Current Task model (renamed from Task to avoid conflicts)
+//  Main Task.swift file contains the typealias
 //
 
 import Foundation
