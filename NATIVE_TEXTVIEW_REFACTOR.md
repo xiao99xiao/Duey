@@ -277,6 +277,57 @@ If issues arise:
 
 ---
 
-**Status**: Not Started
+**Status**: In Progress - Ready for Testing
 **Last Updated**: 2025-11-15
-**Progress**: 0/10 steps completed
+**Progress**: 6/10 steps completed
+
+## Completed Steps
+
+✅ **Step 1**: Created DueyTextView.swift (522 lines)
+- Custom NSTextView subclass with direct keyDown() override
+- Auto-list conversion: `- ` and `* ` → `• `
+- Numbered list support: `1. `, `2. `, etc.
+- List continuation on Return key
+- Bullet removal on Delete key
+- Indent/outdent with Tab/Shift+Tab
+- Markdown export in copy() override
+
+✅ **Step 2**: Created NativeTextView.swift (115 lines)
+- NSViewRepresentable wrapper for DueyTextView
+- Bidirectional text synchronization (SwiftUI ↔ NSTextView)
+- Coordinator implements NSTextViewDelegate
+- Note: Selection tracking not implemented yet (deferred to Step 7)
+
+✅ **Step 3**: Updated RichTextEditor.swift
+- Replaced TextEditor with NativeTextView
+- Removed ListContinuationHandler background
+- Removed MarkdownCopyHandler background
+
+✅ **Step 4**: Removed old handler code
+- Deleted ListContinuationHandler struct (~460 lines)
+- Deleted MarkdownCopyHandler struct (~280 lines)
+- Reduced RichTextEditor.swift from 1118 to 370 lines
+
+✅ **Step 5**: Auto-list logic ported (completed during Step 1)
+
+✅ **Step 6**: Markdown copy logic ported (completed during Step 1)
+
+## Known Issues
+
+⚠️ **Formatting toolbar won't appear** - The toolbar relies on selection tracking, which is not yet implemented in NativeTextView. This is expected and will be addressed in Step 7. Auto-list conversion is the current priority.
+
+## Next Steps
+
+**Step 7**: Update Formatting Toolbar Integration (pending)
+- Need to implement selection tracking in NativeTextView
+- Update toolbar to work with NSTextView selection
+
+**Step 8**: Testing & Validation (NEXT - ready to test!)
+- Build project in Xcode
+- Test auto-list conversion by typing `- ` or `* `
+- Verify numbered lists work
+- Test list continuation, deletion, and indentation
+
+**Step 9**: Code Cleanup & Documentation (pending)
+
+**Step 10**: Commit & Merge (pending)
