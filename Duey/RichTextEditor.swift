@@ -408,6 +408,7 @@ struct ListContinuationHandler: NSViewRepresentable {
         @Binding var text: AttributedString
         weak var textView: NSTextView?
         private var eventMonitor: Any?
+        private let id = UUID()
 
         init(text: Binding<AttributedString>) {
             self._text = text
@@ -421,18 +422,20 @@ struct ListContinuationHandler: NSViewRepresentable {
         }
 
         func startFindingTextView(from view: NSView) {
-            print("📝 List continuation: Starting search for NSTextView")
+            let shortID = String(id.uuidString.prefix(8))
+            print("📝 List continuation [\(shortID)]: Starting search for NSTextView")
             findAndSetupTextView(from: view, retryCount: 0)
         }
 
         private func findAndSetupTextView(from view: NSView, retryCount: Int) {
+            let shortID = String(id.uuidString.prefix(8))
             var currentView: NSView? = view
             while let v = currentView {
                 if let window = v.window {
                     if let textView = findTextView(in: window.contentView) {
                         self.textView = textView
                         setupKeyEventMonitor()
-                        print("📝 List continuation: ✅ Found and connected to NSTextView (attempt \(retryCount + 1))")
+                        print("📝 List continuation [\(shortID)]: ✅ Found and connected to NSTextView (attempt \(retryCount + 1))")
                         return
                     }
                 }
@@ -442,14 +445,14 @@ struct ListContinuationHandler: NSViewRepresentable {
             // Couldn't find textView - retry up to 10 times with increasing delay
             if retryCount < 10 {
                 let delay = 0.05 * Double(retryCount + 1) // Increase delay: 50ms, 100ms, 150ms...
-                print("⚠️ List continuation: Could not find NSTextView, retry \(retryCount + 1)/10 (waiting \(Int(delay * 1000))ms)")
+                print("⚠️ List continuation [\(shortID)]: Could not find NSTextView, retry \(retryCount + 1)/10 (waiting \(Int(delay * 1000))ms)")
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak view] in
                     guard let self = self, let view = view else { return }
                     self.findAndSetupTextView(from: view, retryCount: retryCount + 1)
                 }
             } else {
-                print("❌ List continuation: Failed to find NSTextView after 10 retries")
+                print("❌ List continuation [\(shortID)]: Failed to find NSTextView after 10 retries")
             }
         }
 
@@ -470,12 +473,14 @@ struct ListContinuationHandler: NSViewRepresentable {
         }
 
         private func setupKeyEventMonitor() {
+            let shortID = String(id.uuidString.prefix(8))
+
             // Remove existing monitor if any
             if let monitor = eventMonitor {
                 NSEvent.removeMonitor(monitor)
             }
 
-            print("📝 List continuation: Setting up key event monitor")
+            print("📝 List continuation [\(shortID)]: Setting up key event monitor")
 
             // Monitor key events locally
             eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -501,12 +506,13 @@ struct ListContinuationHandler: NSViewRepresentable {
 
                 // Check for Space key (auto-convert -, *, or 1. to list)
                 if event.keyCode == 49 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
-                    print("📝 List continuation: Space key pressed")
+                    let shortID = String(self.id.uuidString.prefix(8))
+                    print("📝 List continuation [\(shortID)]: Space key pressed")
                     if self.handleSpaceKey(textView) {
-                        print("📝 List continuation: Space key handled (converted to list)")
+                        print("📝 List continuation [\(shortID)]: Space key handled (converted to list)")
                         return nil // Event handled, don't propagate
                     }
-                    print("📝 List continuation: Space key not handled (no conversion)")
+                    print("📝 List continuation [\(shortID)]: Space key not handled (no conversion)")
                 }
 
                 // Check for Tab key (indent list)
@@ -598,17 +604,16 @@ struct ListContinuationHandler: NSViewRepresentable {
         }
 
         private func handleSpaceKey(_ textView: NSTextView) -> Bool {
+            let shortID = String(id.uuidString.prefix(8))
+
             guard let textStorage = textView.textStorage else {
-                print("📝 List continuation: No textStorage")
                 return false
             }
 
             let cursorPosition = textView.selectedRange().location
-            print("📝 List continuation: Cursor position = \(cursorPosition)")
 
             // Need at least one character before cursor
             guard cursorPosition > 0 else {
-                print("📝 List continuation: Cursor at start of document")
                 return false
             }
 
@@ -622,13 +627,11 @@ struct ListContinuationHandler: NSViewRepresentable {
 
             // Get the text from line start to cursor
             let textBeforeCursor = string.substring(with: NSRange(location: lineStart, length: cursorPosition - lineStart))
-            print("📝 List continuation: Text before cursor = '\(textBeforeCursor)'")
 
             // Check for numbered list pattern (e.g., "1.", "2.", etc.)
             let numberPattern = "^(\\d+)\\.$"
             if let regex = try? NSRegularExpression(pattern: numberPattern),
                regex.firstMatch(in: textBeforeCursor, range: NSRange(location: 0, length: textBeforeCursor.utf16.count)) != nil {
-                print("📝 List continuation: Matched numbered list pattern")
                 // It's already formatted as "1." - just insert a space after it
                 let attributes = textStorage.attributes(at: cursorPosition - 1, effectiveRange: nil)
 
@@ -643,20 +646,18 @@ struct ListContinuationHandler: NSViewRepresentable {
             }
 
             // Check if cursor is right after the first character of the line
-            print("📝 List continuation: lineStart = \(lineStart), cursorPosition = \(cursorPosition)")
             guard cursorPosition == lineStart + 1 else {
-                print("📝 List continuation: Not at first character of line")
+                print("📝 List continuation [\(shortID)]: Not at first char (cursor:\(cursorPosition) lineStart:\(lineStart))")
                 return false
             }
 
             // Get the character before cursor
             let charBeforeCursor = string.character(at: cursorPosition - 1)
             let char = Character(UnicodeScalar(charBeforeCursor)!)
-            print("📝 List continuation: Character before cursor = '\(char)'")
 
             // Check if it's - or *
             if char == "-" || char == "*" {
-                print("📝 List continuation: Converting '\(char)' to bullet")
+                print("📝 List continuation [\(shortID)]: Converting '\(char)' to bullet ✓")
 
                 // Replace the character with bullet and space
                 textStorage.beginEditing()
@@ -669,7 +670,7 @@ struct ListContinuationHandler: NSViewRepresentable {
                 return true
             }
 
-            print("📝 List continuation: Character is not - or *")
+            print("📝 List continuation [\(shortID)]: Char '\(char)' is not - or *")
             return false
         }
 
