@@ -412,79 +412,55 @@ class DueyTextView: NSTextView {
                 linkURL = link
             }
 
-            // Handle link start
+            // Handle link transitions
             if linkURL != nil && currentLink == nil {
                 markdown += "["
-            }
-
-            // Close link if it ended
-            if currentLink != nil && linkURL == nil {
+            } else if currentLink != nil && linkURL == nil {
                 if let url = currentLink {
                     markdown += "](\(url.absoluteString))"
                 }
             }
 
-            // Process each character to handle newlines specially
+            // Handle formatting transitions at the start of this range
+            // Close old formatting that's no longer active
+            if currentStrikethrough && !hasStrikethrough {
+                markdown += "~~"
+            }
+            if currentUnderline && !hasUnderline {
+                markdown += "</u>"
+            }
+            if currentBold && currentItalic && !(isBold && isItalic) {
+                markdown += "***"
+            } else if currentBold && !isBold {
+                markdown += "**"
+            } else if currentItalic && !isItalic {
+                markdown += "*"
+            }
+
+            // Open new formatting
+            if isBold && isItalic && !(currentBold && currentItalic) {
+                markdown += "***"
+            } else if isBold && !currentBold {
+                markdown += "**"
+            } else if isItalic && !currentItalic {
+                markdown += "*"
+            }
+            if hasUnderline && !currentUnderline {
+                markdown += "<u>"
+            }
+            if hasStrikethrough && !currentStrikethrough {
+                markdown += "~~"
+            }
+
+            // Add the text content (handling newlines specially for formatting)
             for char in substring {
-                let isNewline = char == "\n"
-
-                // Close formatting before newline
-                if isNewline {
-                    if currentStrikethrough {
-                        markdown += "~~"
-                    }
-                    if currentUnderline {
-                        markdown += "</u>"
-                    }
-                    if currentBold && currentItalic {
-                        markdown += "***"
-                    } else if currentBold {
-                        markdown += "**"
-                    } else if currentItalic {
-                        markdown += "*"
-                    }
-                } else {
-                    // Open formatting if needed (not a newline and formatting changed)
-                    if hasStrikethrough && !currentStrikethrough {
-                        markdown += "~~"
-                    }
-                    if hasUnderline && !currentUnderline {
-                        markdown += "<u>"
-                    }
-                    if isBold && isItalic && !(currentBold && currentItalic) {
-                        markdown += "***"
-                    } else if isBold && !currentBold {
-                        markdown += "**"
-                    } else if isItalic && !currentItalic {
-                        markdown += "*"
-                    }
-
-                    // Close formatting if changed
-                    if !hasStrikethrough && currentStrikethrough {
-                        markdown += "~~"
-                    }
-                    if !hasUnderline && currentUnderline {
-                        markdown += "</u>"
-                    }
-                    if !(isBold && isItalic) && currentBold && currentItalic {
-                        markdown += "***"
-                    } else if !isBold && currentBold && !currentItalic {
-                        markdown += "**"
-                    } else if !isItalic && currentItalic && !currentBold {
-                        markdown += "*"
-                    }
-                }
-
-                // Add the character
-                markdown.append(char)
-
-                // Reopen formatting after newline
-                if isNewline {
+                if char == "\n" {
+                    // Close formatting before newline
                     if hasStrikethrough {
                         markdown += "~~"
                     }
                     if hasUnderline {
-                        markdown += "<u>"
+                        markdown += "</u>"
                     }
                     if isBold && isItalic {
                         markdown += "***"
@@ -493,15 +469,36 @@ class DueyTextView: NSTextView {
                     } else if isItalic {
                         markdown += "*"
                     }
-                }
 
-                // Update current state
-                currentBold = isBold
-                currentItalic = isItalic
-                currentUnderline = hasUnderline
-                currentStrikethrough = hasStrikethrough
-                currentLink = linkURL
+                    // Add newline
+                    markdown.append(char)
+
+                    // Reopen formatting after newline
+                    if isBold && isItalic {
+                        markdown += "***"
+                    } else if isBold {
+                        markdown += "**"
+                    } else if isItalic {
+                        markdown += "*"
+                    }
+                    if hasUnderline {
+                        markdown += "<u>"
+                    }
+                    if hasStrikethrough {
+                        markdown += "~~"
+                    }
+                } else {
+                    // Regular character
+                    markdown.append(char)
+                }
             }
+
+            // Update current state
+            currentBold = isBold
+            currentItalic = isItalic
+            currentUnderline = hasUnderline
+            currentStrikethrough = hasStrikethrough
+            currentLink = linkURL
         }
 
         // Close any remaining formatting at the end
