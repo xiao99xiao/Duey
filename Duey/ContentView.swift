@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import KeyboardShortcuts
+import WidgetKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -169,6 +170,8 @@ struct ContentView: View {
 
             do {
                 try modelContext.save()
+                // Reload widget after restoring task
+                WidgetCenter.shared.reloadTimelines(ofKind: "TaskList")
             } catch {
                 print("Failed to save restored task: \(error)")
             }

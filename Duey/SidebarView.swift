@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct SidebarView: View {
     let tasks: [Task]
@@ -49,6 +50,9 @@ struct SidebarView: View {
         modelContext.insert(newTask)
         pendingNewTask = newTask
         selectedTask = newTask
+
+        // Reload widget to show new task
+        WidgetCenter.shared.reloadTimelines(ofKind: "TaskList")
     }
 
     private func deleteTask(at offsets: IndexSet) {
@@ -82,6 +86,8 @@ struct SidebarView: View {
 
             do {
                 try modelContext.save()
+                // Reload widget after deletion
+                WidgetCenter.shared.reloadTimelines(ofKind: "TaskList")
             } catch {
                 print("Failed to save after delete: \(error)")
             }

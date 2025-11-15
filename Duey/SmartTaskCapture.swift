@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import Combine
+import WidgetKit
 
 @MainActor
 class SmartTaskCapture: ObservableObject {
@@ -158,6 +159,8 @@ class SmartTaskCapture: ObservableObject {
         do {
             try modelContext.save()
             print("SmartTaskCapture: Task created successfully: '\(title)'")
+            // Reload widget after creating task
+            WidgetCenter.shared.reloadTimelines(ofKind: "TaskList")
         } catch {
             print("SmartTaskCapture: Failed to save task: \(error.localizedDescription)")
         }

@@ -20,13 +20,18 @@ struct RichTextEditorView: View {
                 .onAppear {
                     if !hasLoaded {
                         // Load from model when view appears
-                        editingText = task.attributedContent
+                        if let content = task.content {
+                            editingText = AttributedString(content)
+                        } else {
+                            editingText = AttributedString("")
+                        }
                         hasLoaded = true
                     }
                 }
                 .onChange(of: editingText) { oldValue, newValue in
                     // Save to model on every change
-                    task.attributedContent = newValue
+                    // Convert AttributedString to plain String for storage
+                    task.content = String(newValue.characters)
                 }
         }
     }

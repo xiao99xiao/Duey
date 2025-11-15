@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct TaskDetailView: View {
     @Bindable var task: Task
@@ -56,6 +57,15 @@ struct TaskDetailView: View {
             if task.id == pendingNewTask?.id && task.title.isEmpty {
                 titleFocused = true
             }
+        }
+        .onChange(of: task.isCompleted) { _, _ in
+            WidgetCenter.shared.reloadTimelines(ofKind: "TaskList")
+        }
+        .onChange(of: task.deadline) { _, _ in
+            WidgetCenter.shared.reloadTimelines(ofKind: "TaskList")
+        }
+        .onChange(of: task.title) { _, _ in
+            WidgetCenter.shared.reloadTimelines(ofKind: "TaskList")
         }
     }
 
