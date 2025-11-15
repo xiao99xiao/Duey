@@ -35,6 +35,7 @@ final class Task {
         self.isCompleted = isCompleted
         self.createdAt = Date()
         self.completedAt = nil
+        self.content = nil  // Explicitly initialize deprecated field
     }
 
     init(
@@ -51,6 +52,7 @@ final class Task {
         self.isCompleted = isCompleted
         self.createdAt = createdAt
         self.completedAt = completedAt
+        self.content = nil  // Explicitly initialize deprecated field
     }
 
     // Computed property to work with AttributedString
