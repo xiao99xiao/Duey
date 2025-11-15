@@ -11,14 +11,14 @@ import SwiftUI
 
 // MARK: - Data Structures
 
-struct ExportData: Codable, Sendable {
+nonisolated struct ExportData: Codable, Sendable {
     let exportDate: Date
     let version: String
     let taskCount: Int
     let tasks: [ExportTask]
 }
 
-struct ExportTask: Codable, Sendable {
+nonisolated struct ExportTask: Codable, Sendable {
     let title: String
     let content: String?  // Plain text content
     let deadline: Date?
