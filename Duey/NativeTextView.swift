@@ -63,7 +63,11 @@ struct NativeTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? DueyTextView else { return }
 
-        // Only update if text actually changed to avoid cursor jumping
+        // CRITICAL: Don't update NSTextView while user is editing
+        // This prevents destroying formatting and breaking Return key
+        guard !context.coordinator.isEditingText else { return }
+
+        // Only update if text actually changed (external change, like loading a task)
         let currentAttributedString = textView.attributedString()
         if let newNSAttributedString = try? NSAttributedString(text, including: \.appKit),
            !currentAttributedString.isEqual(to: newNSAttributedString) {
@@ -91,12 +95,19 @@ struct NativeTextView: NSViewRepresentable {
         @Binding var text: AttributedString
         weak var textView: DueyTextView?
 
+        // Track if user is actively editing (prevents updateNSView from interfering)
+        var isEditingText = false
+
         init(text: Binding<AttributedString>) {
             self._text = text
             super.init()
         }
 
         // MARK: - Text Change Handling
+
+        func textDidBeginEditing(_ notification: Notification) {
+            isEditingText = true
+        }
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
@@ -110,6 +121,10 @@ struct NativeTextView: NSViewRepresentable {
                     text = attributedString
                 }
             }
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            isEditingText = false
         }
     }
 }
