@@ -18,18 +18,16 @@ struct DueyApp: App {
     @MainActor
     static let sharedModelContainer: ModelContainer = {
         do {
-            // TEMPORARY: Disable CloudKit sync to allow schema migration
-            // After migration works, change cloudKitDatabase back to .automatic
+            // CloudKit sync enabled - fresh start with clean schema
             let schema = Schema([TaskSchemaV2.self])
             let config = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false,
-                cloudKitDatabase: .none  // TEMPORARY: Disable CloudKit sync
+                cloudKitDatabase: .automatic  // CloudKit sync enabled
             )
             let container = try ModelContainer(for: schema, configurations: [config])
 
-            print("✅ ModelContainer created successfully (CloudKit DISABLED temporarily)")
-            print("⚠️  CloudKit sync is disabled - change cloudKitDatabase to .automatic after migration")
+            print("✅ ModelContainer created successfully with CloudKit sync enabled")
 
             return container
         } catch {
