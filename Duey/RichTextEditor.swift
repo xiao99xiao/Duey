@@ -415,6 +415,7 @@ struct ListContinuationHandler: NSViewRepresentable {
         @Binding var text: AttributedString
         weak var textView: NSTextView?
         private var eventMonitor: Any?
+        private var retryTimer: Timer?
 
         init(text: Binding<AttributedString>) {
             self._text = text
@@ -425,9 +426,14 @@ struct ListContinuationHandler: NSViewRepresentable {
             if let monitor = eventMonitor {
                 NSEvent.removeMonitor(monitor)
             }
+            retryTimer?.invalidate()
         }
 
-        func findAndSetupTextView(from view: NSView) {
+        func findAndSetupTextView(from view: NSView, retryCount: Int = 0) {
+            // Invalidate any existing retry timer
+            retryTimer?.invalidate()
+            retryTimer = nil
+
             var currentView: NSView? = view
             while let v = currentView {
                 if let window = v.window {
@@ -440,7 +446,18 @@ struct ListContinuationHandler: NSViewRepresentable {
                 }
                 currentView = v.superview
             }
-            print("⚠️ List continuation: Could not find NSTextView")
+
+            // Couldn't find textView - retry up to 5 times with 100ms delay
+            if retryCount < 5 {
+                print("⚠️ List continuation: Could not find NSTextView, retry \(retryCount + 1)/5")
+                retryTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self, weak view] _ in
+                    if let view = view {
+                        self?.findAndSetupTextView(from: view, retryCount: retryCount + 1)
+                    }
+                }
+            } else {
+                print("❌ List continuation: Failed to find NSTextView after 5 retries")
+            }
         }
 
         private func findTextView(in view: NSView?) -> NSTextView? {
