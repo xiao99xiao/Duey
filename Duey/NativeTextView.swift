@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AppKit
+internal import AppKit
 
 /// SwiftUI wrapper for DueyTextView with bidirectional text synchronization
 struct NativeTextView: NSViewRepresentable {
@@ -64,8 +64,8 @@ struct NativeTextView: NSViewRepresentable {
         guard let textView = scrollView.documentView as? DueyTextView else { return }
 
         // Only update if text actually changed to avoid cursor jumping
-        if let currentAttributedString = textView.attributedString(),
-           let newNSAttributedString = try? NSAttributedString(text, including: \.appKit),
+        let currentAttributedString = textView.attributedString()
+        if let newNSAttributedString = try? NSAttributedString(text, including: \.appKit),
            !currentAttributedString.isEqual(to: newNSAttributedString) {
 
             // Preserve current selection
@@ -102,8 +102,8 @@ struct NativeTextView: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
 
             // Convert NSAttributedString to AttributedString
-            if let nsAttributedString = textView.attributedString(),
-               let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
+            let nsAttributedString = textView.attributedString()
+            if let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
 
                 // Only update binding if text actually changed
                 if attributedString != text {

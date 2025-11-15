@@ -5,7 +5,7 @@
 //  Custom NSTextView with built-in auto-list conversion and markdown copy
 //
 
-import AppKit
+internal import AppKit
 
 /// Custom NSTextView that handles auto-list conversion, list continuation, and markdown export
 class DueyTextView: NSTextView {
