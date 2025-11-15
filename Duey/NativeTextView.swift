@@ -1,0 +1,141 @@
+//
+//  NativeTextView.swift
+//  Duey
+//
+//  NSViewRepresentable wrapper for DueyTextView
+//
+
+import SwiftUI
+import AppKit
+
+/// SwiftUI wrapper for DueyTextView with bidirectional text synchronization
+struct NativeTextView: NSViewRepresentable {
+    @Binding var text: AttributedString
+    @Binding var selection: AttributedTextSelection
+
+    func makeNSView(context: Context) -> NSScrollView {
+        // Create scroll view
+        let scrollView = NSTextView.scrollableTextView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+
+        // Replace the default NSTextView with our custom DueyTextView
+        if let defaultTextView = scrollView.documentView as? NSTextView {
+            let textView = DueyTextView(frame: defaultTextView.frame)
+
+            // Configure text view
+            textView.isRichText = true
+            textView.allowsUndo = true
+            textView.font = .systemFont(ofSize: NSFont.systemFontSize)
+            textView.textColor = .textColor
+            textView.backgroundColor = .clear
+            textView.drawsBackground = false
+            textView.isAutomaticQuoteSubstitutionEnabled = false
+            textView.isAutomaticDashSubstitutionEnabled = false
+            textView.isAutomaticTextReplacementEnabled = false
+            textView.isAutomaticSpellingCorrectionEnabled = false
+
+            // Set text container properties
+            textView.textContainer?.widthTracksTextView = true
+            textView.textContainer?.heightTracksTextView = false
+            textView.isVerticallyResizable = true
+            textView.isHorizontallyResizable = false
+            textView.autoresizingMask = [.width]
+
+            // Set delegate
+            textView.delegate = context.coordinator
+
+            // Replace in scroll view
+            scrollView.documentView = textView
+
+            // Set initial text
+            if let nsAttributedString = try? NSAttributedString(text, including: \.appKit) {
+                textView.textStorage?.setAttributedString(nsAttributedString)
+            }
+
+            // Store reference in coordinator
+            context.coordinator.textView = textView
+        }
+
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? DueyTextView else { return }
+
+        // Only update if text actually changed to avoid cursor jumping
+        if let currentAttributedString = textView.attributedString(),
+           let newNSAttributedString = try? NSAttributedString(text, including: \.appKit),
+           !currentAttributedString.isEqual(to: newNSAttributedString) {
+
+            // Preserve current selection
+            let savedRange = textView.selectedRange()
+
+            // Update text
+            textView.textStorage?.setAttributedString(newNSAttributedString)
+
+            // Restore selection if valid
+            if savedRange.location + savedRange.length <= textView.string.count {
+                textView.setSelectedRange(savedRange)
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, selection: $selection)
+    }
+
+    // MARK: - Coordinator
+
+    class Coordinator: NSObject, NSTextViewDelegate {
+        @Binding var text: AttributedString
+        @Binding var selection: AttributedTextSelection
+        weak var textView: DueyTextView?
+
+        init(text: Binding<AttributedString>, selection: Binding<AttributedTextSelection>) {
+            self._text = text
+            self._selection = selection
+            super.init()
+        }
+
+        // MARK: - Text Change Handling
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+
+            // Convert NSAttributedString to AttributedString
+            if let nsAttributedString = textView.attributedString(),
+               let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
+
+                // Only update binding if text actually changed
+                if attributedString != text {
+                    text = attributedString
+                }
+            }
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+
+            // Update selection binding
+            let nsRange = textView.selectedRange()
+
+            // Convert NSRange to AttributedString range
+            if let attributedString = try? AttributedString(textView.attributedString() ?? NSAttributedString(), including: \.appKit) {
+                if nsRange.length == 0 {
+                    // Insertion point
+                    if let index = AttributedString.Index(nsRange.location, within: attributedString) {
+                        selection = .init(insertionPoint: index)
+                    }
+                } else {
+                    // Selection range
+                    if let startIndex = AttributedString.Index(nsRange.location, within: attributedString),
+                       let endIndex = AttributedString.Index(nsRange.location + nsRange.length, within: attributedString) {
+                        selection = .init(ranges: [startIndex..<endIndex])
+                    }
+                }
+            }
+        }
+    }
+}
