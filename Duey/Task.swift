@@ -43,6 +43,42 @@ final class DueyTask {
         }
     }
 
+    // MARK: - Checkbox Statistics
+
+    /// Returns checkbox statistics (checked count, total count)
+    /// Returns nil if there are no checkboxes
+    var checkboxStats: (checked: Int, total: Int)? {
+        guard let rtfData = contentRTF else { return nil }
+
+        // Convert RTF to NSAttributedString
+        guard let attrString = try? NSAttributedString(
+            data: rtfData,
+            options: [.documentType: NSAttributedString.DocumentType.rtf],
+            documentAttributes: nil
+        ) else {
+            return nil
+        }
+
+        var totalCount = 0
+        var checkedCount = 0
+
+        // Enumerate through the attributed string to find checkbox attachments
+        attrString.enumerateAttribute(
+            .attachment,
+            in: NSRange(location: 0, length: attrString.length)
+        ) { value, range, stop in
+            if let attachment = value as? CheckboxAttachment {
+                totalCount += 1
+                if attachment.isChecked {
+                    checkedCount += 1
+                }
+            }
+        }
+
+        // Return nil if no checkboxes found
+        return totalCount > 0 ? (checked: checkedCount, total: totalCount) : nil
+    }
+
     func markAsCompleted() {
         isCompleted = true
         completedAt = Date()
