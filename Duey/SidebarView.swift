@@ -47,16 +47,6 @@ struct SidebarView: View {
     private func createNewTask() {
         let newTask = Duey.Task(title: "", contentData: nil, deadline: nil, isCompleted: false)
         modelContext.insert(newTask)
-
-        // Explicitly save the context to ensure the task persists
-        do {
-            try modelContext.save()
-            print("✅ New task created and saved successfully")
-        } catch {
-            print("❌ Failed to save new task: \(error)")
-            print("Error details: \(error.localizedDescription)")
-        }
-
         pendingNewTask = newTask
         selectedTask = newTask
     }

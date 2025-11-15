@@ -21,8 +21,6 @@ struct ContentView: View {
     @State private var showDeleteToast = false
 
     var sortedTasks: [Task] {
-        print("📊 sortedTasks computed: \(tasks.count) total tasks")
-
         let unfinishedTasks = tasks.filter { !$0.isCompleted }
             .sorted { (task1, task2) in
                 if let deadline1 = task1.deadline, let deadline2 = task2.deadline {
