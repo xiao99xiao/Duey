@@ -114,6 +114,29 @@ struct NativeTextView: NSViewRepresentable {
             self._text = text
             self.textViewRef = textViewRef
             super.init()
+
+            // Listen for checkbox state changes to trigger auto-save
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(checkboxStateDidChange(_:)),
+                name: .checkboxStateDidChange,
+                object: nil
+            )
+        }
+
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+
+        @objc private func checkboxStateDidChange(_ notification: Notification) {
+            // When checkbox state changes, manually trigger text update
+            guard let textView = textView else { return }
+
+            // Force update the binding by reading current text
+            let nsAttributedString = textView.attributedString()
+            if let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
+                text = attributedString
+            }
         }
 
         // MARK: - Text Change Handling
