@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import MarkdownToAttributedString
 
 struct RichTextEditorView: View {
     @Bindable var task: Task
@@ -20,18 +19,9 @@ struct RichTextEditorView: View {
                 .padding(12)
                 .onAppear {
                     if !hasLoaded {
-                        // Load from model when view appears - parse markdown using library
-                        if let markdown = task.content, !markdown.isEmpty {
-                            // Use MarkdownToAttributedString library for better parsing
-                            let nsAttributedString = AttributedStringFormatter.format(markdown: markdown)
-
-                            // Convert NSAttributedString to SwiftUI AttributedString
-                            if let swiftUIAttributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
-                                editingText = swiftUIAttributedString
-                            } else {
-                                // Fallback to plain text
-                                editingText = AttributedString(markdown)
-                            }
+                        // Load from model when view appears
+                        if let content = task.content {
+                            editingText = AttributedString(content)
                         } else {
                             editingText = AttributedString("")
                         }
@@ -39,14 +29,9 @@ struct RichTextEditorView: View {
                     }
                 }
                 .onChange(of: editingText) { oldValue, newValue in
-                    // Save to model on every change - convert to markdown
-                    // Convert SwiftUI AttributedString → NSAttributedString → Markdown
-                    if let nsAttributedString = try? NSAttributedString(newValue, including: \.appKit) {
-                        task.content = DueyTextView.convertToMarkdown(nsAttributedString)
-                    } else {
-                        // Fallback to plain text
-                        task.content = String(newValue.characters)
-                    }
+                    // Save to model on every change
+                    // Convert AttributedString to plain String for storage
+                    task.content = String(newValue.characters)
                 }
         }
     }

@@ -353,7 +353,7 @@ class DueyTextView: NSTextView {
         let selectedAttributedText = textStorage.attributedSubstring(from: selectedRange)
 
         // Convert to markdown
-        let markdown = convertToMarkdownImpl(selectedAttributedText)
+        let markdown = convertToMarkdown(selectedAttributedText)
 
         // Put both on pasteboard
         let pasteboard = NSPasteboard.general
@@ -368,13 +368,8 @@ class DueyTextView: NSTextView {
         pasteboard.setString(markdown, forType: .string)
     }
 
-    /// Converts NSAttributedString to markdown format (public static version)
-    static func convertToMarkdown(_ attributedString: NSAttributedString) -> String {
-        return DueyTextView().convertToMarkdownImpl(attributedString)
-    }
-
     /// Converts NSAttributedString to markdown format
-    private func convertToMarkdownImpl(_ attributedString: NSAttributedString) -> String {
+    private func convertToMarkdown(_ attributedString: NSAttributedString) -> String {
         var markdown = ""
         let string = attributedString.string
 
@@ -412,57 +407,96 @@ class DueyTextView: NSTextView {
                 linkURL = link
             }
 
-            // Handle link transitions
+            // Handle link start
             if linkURL != nil && currentLink == nil {
                 markdown += "["
-            } else if currentLink != nil && linkURL == nil {
+            }
+
+            // Close link if it ended
+            if currentLink != nil && linkURL == nil {
                 if let url = currentLink {
                     markdown += "](\(url.absoluteString))"
                 }
             }
 
-            // Handle formatting transitions at the start of this range
-            // Close old formatting that's no longer active
-            if currentStrikethrough && !hasStrikethrough {
-                markdown += "~~"
-            }
-            if currentUnderline && !hasUnderline {
-                markdown += "</u>"
-            }
-            if currentBold && currentItalic && !(isBold && isItalic) {
-                markdown += "***"
-            } else if currentBold && !isBold {
-                markdown += "**"
-            } else if currentItalic && !isItalic {
-                markdown += "*"
-            }
+            // Process each character to handle newlines specially
+            for char in substring {
+                let isNewline = char == "\n"
 
-            // Open new formatting
-            if isBold && isItalic && !(currentBold && currentItalic) {
-                markdown += "***"
-            } else if isBold && !currentBold {
-                markdown += "**"
-            } else if isItalic && !currentItalic {
-                markdown += "*"
-            }
-            if hasUnderline && !currentUnderline {
-                markdown += "<u>"
-            }
-            if hasStrikethrough && !currentStrikethrough {
-                markdown += "~~"
-            }
+                // Close formatting before newline
+                if isNewline {
+                    if currentStrikethrough {
+                        markdown += "~~"
+                    }
+                    if currentUnderline {
+                        markdown += "</u>"
+                    }
+                    if currentBold && currentItalic {
+                        markdown += "***"
+                    } else if currentBold {
+                        markdown += "**"
+                    } else if currentItalic {
+                        markdown += "*"
+                    }
+                } else {
+                    // Open formatting if needed (not a newline and formatting changed)
+                    if hasStrikethrough && !currentStrikethrough {
+                        markdown += "~~"
+                    }
+                    if hasUnderline && !currentUnderline {
+                        markdown += "<u>"
+                    }
+                    if isBold && isItalic && !(currentBold && currentItalic) {
+                        markdown += "***"
+                    } else if isBold && !currentBold {
+                        markdown += "**"
+                    } else if isItalic && !currentItalic {
+                        markdown += "*"
+                    }
 
-            // Add the text content
-            // Note: We don't special-case newlines anymore since .inlineOnlyPreservingWhitespace
-            // mode can handle newlines within formatted text
-            markdown += substring
+                    // Close formatting if changed
+                    if !hasStrikethrough && currentStrikethrough {
+                        markdown += "~~"
+                    }
+                    if !hasUnderline && currentUnderline {
+                        markdown += "</u>"
+                    }
+                    if !(isBold && isItalic) && currentBold && currentItalic {
+                        markdown += "***"
+                    } else if !isBold && currentBold && !currentItalic {
+                        markdown += "**"
+                    } else if !isItalic && currentItalic && !currentBold {
+                        markdown += "*"
+                    }
+                }
 
-            // Update current state
-            currentBold = isBold
-            currentItalic = isItalic
-            currentUnderline = hasUnderline
-            currentStrikethrough = hasStrikethrough
-            currentLink = linkURL
+                // Add the character
+                markdown.append(char)
+
+                // Reopen formatting after newline
+                if isNewline {
+                    if hasStrikethrough {
+                        markdown += "~~"
+                    }
+                    if hasUnderline {
+                        markdown += "<u>"
+                    }
+                    if isBold && isItalic {
+                        markdown += "***"
+                    } else if isBold {
+                        markdown += "**"
+                    } else if isItalic {
+                        markdown += "*"
+                    }
+                }
+
+                // Update current state
+                currentBold = isBold
+                currentItalic = isItalic
+                currentUnderline = hasUnderline
+                currentStrikethrough = hasStrikethrough
+                currentLink = linkURL
+            }
         }
 
         // Close any remaining formatting at the end
