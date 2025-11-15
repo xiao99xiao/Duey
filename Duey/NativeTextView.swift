@@ -11,7 +11,6 @@ import AppKit
 /// SwiftUI wrapper for DueyTextView with bidirectional text synchronization
 struct NativeTextView: NSViewRepresentable {
     @Binding var text: AttributedString
-    @Binding var selection: AttributedTextSelection
 
     func makeNSView(context: Context) -> NSScrollView {
         // Create scroll view
@@ -83,19 +82,17 @@ struct NativeTextView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, selection: $selection)
+        Coordinator(text: $text)
     }
 
     // MARK: - Coordinator
 
     class Coordinator: NSObject, NSTextViewDelegate {
         @Binding var text: AttributedString
-        @Binding var selection: AttributedTextSelection
         weak var textView: DueyTextView?
 
-        init(text: Binding<AttributedString>, selection: Binding<AttributedTextSelection>) {
+        init(text: Binding<AttributedString>) {
             self._text = text
-            self._selection = selection
             super.init()
         }
 
@@ -111,29 +108,6 @@ struct NativeTextView: NSViewRepresentable {
                 // Only update binding if text actually changed
                 if attributedString != text {
                     text = attributedString
-                }
-            }
-        }
-
-        func textViewDidChangeSelection(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-
-            // Update selection binding
-            let nsRange = textView.selectedRange()
-
-            // Convert NSRange to AttributedString range
-            if let attributedString = try? AttributedString(textView.attributedString() ?? NSAttributedString(), including: \.appKit) {
-                if nsRange.length == 0 {
-                    // Insertion point
-                    if let index = AttributedString.Index(nsRange.location, within: attributedString) {
-                        selection = .init(insertionPoint: index)
-                    }
-                } else {
-                    // Selection range
-                    if let startIndex = AttributedString.Index(nsRange.location, within: attributedString),
-                       let endIndex = AttributedString.Index(nsRange.location + nsRange.length, within: attributedString) {
-                        selection = .init(ranges: [startIndex..<endIndex])
-                    }
                 }
             }
         }
