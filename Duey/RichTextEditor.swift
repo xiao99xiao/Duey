@@ -401,6 +401,7 @@ struct ListContinuationHandler: NSViewRepresentable {
         DispatchQueue.main.async {
             // Check if current textView is still valid (has a window)
             if context.coordinator.textView?.window == nil {
+                print("📝 List continuation: TextView lost window, reconnecting...")
                 context.coordinator.findAndSetupTextView(from: nsView)
             }
         }
