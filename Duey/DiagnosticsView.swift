@@ -311,7 +311,6 @@ struct DiagnosticsView: View {
         let exportTasks = tasks.map { task -> ExportTask in
             ExportTask(
                 title: task.title,
-                content: task.content,
                 deadline: task.deadline,
                 isCompleted: task.isCompleted,
                 createdAt: task.createdAt,
@@ -408,7 +407,6 @@ struct DiagnosticsView: View {
                 // Create new task
                 let newTask = Task(
                     title: exportTask.title,
-                    content: exportTask.content,
                     deadline: exportTask.deadline,
                     isCompleted: exportTask.isCompleted
                 )
@@ -488,8 +486,8 @@ struct TaskDiagnosticRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if let content = task.content, !content.isEmpty {
-                    Label("\(content.count) chars", systemImage: "doc.text")
+                if let rtfData = task.contentRTF {
+                    Label("\(ByteCountFormatter.string(fromByteCount: Int64(rtfData.count), countStyle: .file))", systemImage: "doc.richtext")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

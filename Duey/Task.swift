@@ -12,8 +12,7 @@ import SwiftUI
 @Model
 final class Task {
     var title: String = ""
-    var content: String?  // Deprecated - kept for CloudKit compatibility
-    var contentRTF: Data?  // New RTF formatted content
+    var contentRTF: Data?  // RTF formatted content
     var deadline: Date?
     var isCompleted: Bool = false
     var createdAt: Date = Date()
@@ -21,12 +20,10 @@ final class Task {
 
     init(
         title: String = "",
-        content: String? = nil,
         deadline: Date? = nil,
         isCompleted: Bool = false
     ) {
         self.title = title
-        self.content = content
         self.contentRTF = nil
         self.deadline = deadline
         self.isCompleted = isCompleted
@@ -36,38 +33,13 @@ final class Task {
 
     // MARK: - Rich Content Helper
 
-    /// Unified access to content - prefers RTF, falls back to plain text
+    /// Direct access to RTF content
     var richContent: Data? {
         get {
-            // Prefer RTF if it exists
-            if let rtf = contentRTF {
-                return rtf
-            }
-
-            // Fallback: convert old plain text to RTF
-            if let plainText = content, !plainText.isEmpty {
-                let attrString = NSAttributedString(string: plainText)
-                return try? attrString.data(
-                    from: NSRange(location: 0, length: attrString.length),
-                    documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
-                )
-            }
-
-            return nil
+            return contentRTF
         }
         set {
             contentRTF = newValue
-            // Keep content in sync for backwards compatibility (extract plain text)
-            if let rtfData = newValue,
-               let attrString = try? NSAttributedString(
-                   data: rtfData,
-                   options: [.documentType: NSAttributedString.DocumentType.rtf],
-                   documentAttributes: nil
-               ) {
-                content = attrString.string
-            } else {
-                content = nil
-            }
         }
     }
 

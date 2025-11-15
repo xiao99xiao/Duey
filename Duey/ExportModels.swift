@@ -20,7 +20,6 @@ nonisolated struct ExportData: Codable, Sendable {
 
 nonisolated struct ExportTask: Codable, Sendable {
     let title: String
-    let content: String?  // Plain text content
     let deadline: Date?
     let isCompleted: Bool
     let createdAt: Date
