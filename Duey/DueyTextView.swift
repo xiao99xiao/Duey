@@ -452,46 +452,10 @@ class DueyTextView: NSTextView {
                 markdown += "~~"
             }
 
-            // Add the text content (handling newlines specially for formatting)
-            for char in substring {
-                if char == "\n" {
-                    // Close formatting before newline
-                    if hasStrikethrough {
-                        markdown += "~~"
-                    }
-                    if hasUnderline {
-                        markdown += "</u>"
-                    }
-                    if isBold && isItalic {
-                        markdown += "***"
-                    } else if isBold {
-                        markdown += "**"
-                    } else if isItalic {
-                        markdown += "*"
-                    }
-
-                    // Add newline
-                    markdown.append(char)
-
-                    // Reopen formatting after newline
-                    if isBold && isItalic {
-                        markdown += "***"
-                    } else if isBold {
-                        markdown += "**"
-                    } else if isItalic {
-                        markdown += "*"
-                    }
-                    if hasUnderline {
-                        markdown += "<u>"
-                    }
-                    if hasStrikethrough {
-                        markdown += "~~"
-                    }
-                } else {
-                    // Regular character
-                    markdown.append(char)
-                }
-            }
+            // Add the text content
+            // Note: We don't special-case newlines anymore since .inlineOnlyPreservingWhitespace
+            // mode can handle newlines within formatted text
+            markdown += substring
 
             // Update current state
             currentBold = isBold
