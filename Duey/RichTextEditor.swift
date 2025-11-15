@@ -26,7 +26,6 @@ struct RichTextEditor: View {
                 if hasSelection, textViewRef.selectionRect != .zero {
                     let toolbarHeight: CGFloat = 50
                     let spaceAbove = textViewRef.selectionRect.minY
-                    let spaceBelow = geometry.size.height - textViewRef.selectionRect.maxY
 
                     // Position above if there's enough space, otherwise below
                     let shouldPositionAbove = spaceAbove >= toolbarHeight + 10
@@ -177,6 +176,9 @@ struct RichTextEditor: View {
                 TextField("Link text", text: $linkText)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 250)
+                    .onSubmit {
+                        updateLink()
+                    }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -186,6 +188,9 @@ struct RichTextEditor: View {
                 TextField("https://example.com", text: $linkURL)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 250)
+                    .onSubmit {
+                        updateLink()
+                    }
             }
 
             Text("Leave URL empty to remove link")
