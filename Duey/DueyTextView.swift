@@ -334,6 +334,40 @@ class DueyTextView: NSTextView {
         return false
     }
 
+    // MARK: - Checkbox Support
+
+    /// Inserts a checkbox at the current cursor position or converts selected text to checkbox
+    func insertCheckbox() {
+        guard let textStorage = textStorage else { return }
+
+        let selectedRange = selectedRange()
+        let cursorPosition = selectedRange.location
+
+        // Get the selected text (if any) to use as checkbox label
+        let selectedText = selectedRange.length > 0 ?
+            textStorage.attributedSubstring(from: selectedRange).string : ""
+
+        // Create checkbox attachment
+        let checkbox = CheckboxAttachment(isChecked: false, text: selectedText)
+
+        // Create attributed string with the attachment
+        let attachmentString = NSMutableAttributedString(attachment: checkbox)
+
+        // If there's selected text, we need to add a space after checkbox
+        if !selectedText.isEmpty {
+            attachmentString.append(NSAttributedString(string: " "))
+        }
+
+        // Insert or replace
+        textStorage.beginEditing()
+        textStorage.replaceCharacters(in: selectedRange, with: attachmentString)
+        textStorage.endEditing()
+
+        // Move cursor after the checkbox
+        let newPosition = cursorPosition + attachmentString.length
+        setSelectedRange(NSRange(location: newPosition, length: 0))
+    }
+
     // MARK: - Markdown Copy
 
     /// Override copy to export selected text as markdown

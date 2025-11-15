@@ -145,6 +145,17 @@ struct RichTextEditor: View {
             Divider()
                 .frame(height: 16)
 
+            // Checkbox
+            Button(action: insertCheckbox) {
+                Image(systemName: "checkmark.square")
+                    .font(.system(size: 14))
+            }
+            .buttonStyle(.plain)
+            .help("Checkbox (⌘⇧L)")
+
+            Divider()
+                .frame(height: 16)
+
             // Link
             Button(action: {
                 prepareLink()
@@ -395,6 +406,11 @@ struct RichTextEditor: View {
         textStorage.endEditing()
 
         textView.setSelectedRange(NSRange(location: range.location + number.length, length: 0))
+    }
+
+    private func insertCheckbox() {
+        guard let textView = textViewRef.textView as? DueyTextView else { return }
+        textView.insertCheckbox()
     }
 
     private func updateLink() {
