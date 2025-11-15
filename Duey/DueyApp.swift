@@ -14,13 +14,17 @@ struct DueyApp: App {
     @StateObject private var smartTaskCapture = SmartTaskCapture()
     @StateObject private var appSettings = AppSettings()
 
-    // Shared model container
+    // Shared model container with migration support
     @MainActor
     static let sharedModelContainer: ModelContainer = {
         do {
-            let schema = Schema([Task.self])
-            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            let container = try ModelContainer(for: schema, configurations: [config])
+            // Use the migration plan to handle schema changes
+            let container = try ModelContainer(
+                for: Task.self,
+                migrationPlan: TaskMigrationPlan.self
+            )
+
+            print("✅ ModelContainer created successfully with migration support")
 
             // Initialize CloudKit schema to sync with server
             // This ensures the deprecated 'content' field is properly registered in CloudKit
@@ -32,6 +36,7 @@ struct DueyApp: App {
 
             return container
         } catch {
+            print("❌ Failed to create ModelContainer: \(error)")
             fatalError("Failed to create ModelContainer: \(error)")
         }
     }()
