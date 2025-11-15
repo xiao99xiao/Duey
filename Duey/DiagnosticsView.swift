@@ -520,7 +520,7 @@ struct ExportTask: Codable, Sendable {
 }
 
 // FileDocument for JSON export
-struct JSONExportDocument: FileDocument, @unchecked Sendable {
+struct JSONExportDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
 
     var exportData: ExportData
@@ -529,7 +529,7 @@ struct JSONExportDocument: FileDocument, @unchecked Sendable {
         self.exportData = exportData
     }
 
-    init(configuration: ReadConfiguration) throws {
+    nonisolated init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
@@ -538,7 +538,7 @@ struct JSONExportDocument: FileDocument, @unchecked Sendable {
         exportData = try decoder.decode(ExportData.self, from: data)
     }
 
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+    nonisolated func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
