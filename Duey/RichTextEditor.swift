@@ -484,9 +484,20 @@ struct ListContinuationHandler: NSViewRepresentable {
 
             // Monitor key events locally
             eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                guard let self = self,
-                      let textView = self.textView,
-                      textView.window?.firstResponder == textView else {
+                guard let self = self else { return event }
+                let shortID = String(self.id.uuidString.prefix(8))
+
+                guard let textView = self.textView else {
+                    if event.keyCode == 49 { // Space key
+                        print("📝 List continuation [\(shortID)]: Space pressed but textView is nil")
+                    }
+                    return event
+                }
+
+                guard textView.window?.firstResponder == textView else {
+                    if event.keyCode == 49 { // Space key
+                        print("📝 List continuation [\(shortID)]: Space pressed but textView is not firstResponder (firstResponder: \(String(describing: textView.window?.firstResponder)))")
+                    }
                     return event
                 }
 
