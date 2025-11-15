@@ -433,12 +433,13 @@ struct ListContinuationHandler: NSViewRepresentable {
                     if let textView = findTextView(in: window.contentView) {
                         self.textView = textView
                         setupKeyEventMonitor()
-                        print("✅ List continuation handler set up")
+                        print("📝 List continuation: Found and connected to NSTextView")
                         return
                     }
                 }
                 currentView = v.superview
             }
+            print("⚠️ List continuation: Could not find NSTextView")
         }
 
         private func findTextView(in view: NSView?) -> NSTextView? {
@@ -462,6 +463,8 @@ struct ListContinuationHandler: NSViewRepresentable {
             if let monitor = eventMonitor {
                 NSEvent.removeMonitor(monitor)
             }
+
+            print("📝 List continuation: Setting up key event monitor")
 
             // Monitor key events locally
             eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -487,9 +490,12 @@ struct ListContinuationHandler: NSViewRepresentable {
 
                 // Check for Space key (auto-convert -, *, or 1. to list)
                 if event.keyCode == 49 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
+                    print("📝 List continuation: Space key pressed")
                     if self.handleSpaceKey(textView) {
+                        print("📝 List continuation: Space key handled (converted to list)")
                         return nil // Event handled, don't propagate
                     }
+                    print("📝 List continuation: Space key not handled (no conversion)")
                 }
 
                 // Check for Tab key (indent list)
@@ -581,12 +587,19 @@ struct ListContinuationHandler: NSViewRepresentable {
         }
 
         private func handleSpaceKey(_ textView: NSTextView) -> Bool {
-            guard let textStorage = textView.textStorage else { return false }
+            guard let textStorage = textView.textStorage else {
+                print("📝 List continuation: No textStorage")
+                return false
+            }
 
             let cursorPosition = textView.selectedRange().location
+            print("📝 List continuation: Cursor position = \(cursorPosition)")
 
             // Need at least one character before cursor
-            guard cursorPosition > 0 else { return false }
+            guard cursorPosition > 0 else {
+                print("📝 List continuation: Cursor at start of document")
+                return false
+            }
 
             let string = textStorage.string as NSString
 
@@ -598,11 +611,13 @@ struct ListContinuationHandler: NSViewRepresentable {
 
             // Get the text from line start to cursor
             let textBeforeCursor = string.substring(with: NSRange(location: lineStart, length: cursorPosition - lineStart))
+            print("📝 List continuation: Text before cursor = '\(textBeforeCursor)'")
 
             // Check for numbered list pattern (e.g., "1.", "2.", etc.)
             let numberPattern = "^(\\d+)\\.$"
             if let regex = try? NSRegularExpression(pattern: numberPattern),
                regex.firstMatch(in: textBeforeCursor, range: NSRange(location: 0, length: textBeforeCursor.utf16.count)) != nil {
+                print("📝 List continuation: Matched numbered list pattern")
                 // It's already formatted as "1." - just insert a space after it
                 let attributes = textStorage.attributes(at: cursorPosition - 1, effectiveRange: nil)
 
@@ -617,14 +632,20 @@ struct ListContinuationHandler: NSViewRepresentable {
             }
 
             // Check if cursor is right after the first character of the line
-            guard cursorPosition == lineStart + 1 else { return false }
+            print("📝 List continuation: lineStart = \(lineStart), cursorPosition = \(cursorPosition)")
+            guard cursorPosition == lineStart + 1 else {
+                print("📝 List continuation: Not at first character of line")
+                return false
+            }
 
             // Get the character before cursor
             let charBeforeCursor = string.character(at: cursorPosition - 1)
             let char = Character(UnicodeScalar(charBeforeCursor)!)
+            print("📝 List continuation: Character before cursor = '\(char)'")
 
             // Check if it's - or *
             if char == "-" || char == "*" {
+                print("📝 List continuation: Converting '\(char)' to bullet")
 
                 // Replace the character with bullet and space
                 textStorage.beginEditing()
@@ -637,6 +658,7 @@ struct ListContinuationHandler: NSViewRepresentable {
                 return true
             }
 
+            print("📝 List continuation: Character is not - or *")
             return false
         }
 
@@ -827,7 +849,6 @@ struct MarkdownCopyHandler: NSViewRepresentable {
                     if let textView = findTextView(in: window.contentView) {
                         self.textView = textView
                         setupCopyMonitor()
-                        print("✅ Markdown copy handler set up")
                         return
                     }
                 }
