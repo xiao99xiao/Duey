@@ -17,33 +17,44 @@ struct RichTextEditor: View {
     @State private var linkText = ""
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Native Text Editor with built-in auto-list conversion
-            NativeTextView(text: $text, textViewRef: textViewRef)
-                .safeAreaInset(edge: .bottom) {
-                    // Reserve space for floating toolbar when visible
-                    if hasSelection {
-                        Color.clear.frame(height: 70)
-                    }
-                }
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                // Native Text Editor with built-in auto-list conversion
+                NativeTextView(text: $text, textViewRef: textViewRef)
 
-            // Formatting Toolbar (appears when text is selected)
-            if hasSelection {
-                formattingToolbar
-                    .padding(8)
-                    .background(.regularMaterial)
-                    .cornerRadius(8)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    .padding(.bottom, 12)
-                    .transition(
-                        .asymmetric(
-                            insertion: .offset(y: 10).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
-                            removal: .offset(y: 8).combined(with: .opacity).combined(with: .scale(scale: 0.98))
+                // Formatting Toolbar (appears when text is selected, positioned above or below selection)
+                if hasSelection, textViewRef.selectionRect != .zero {
+                    let toolbarHeight: CGFloat = 50
+                    let spaceAbove = textViewRef.selectionRect.minY
+                    let spaceBelow = geometry.size.height - textViewRef.selectionRect.maxY
+
+                    // Position above if there's enough space, otherwise below
+                    let shouldPositionAbove = spaceAbove >= toolbarHeight + 10
+                    let yPosition = shouldPositionAbove
+                        ? textViewRef.selectionRect.minY - 40
+                        : textViewRef.selectionRect.maxY + 40
+
+                    formattingToolbar
+                        .padding(8)
+                        .background(.regularMaterial)
+                        .cornerRadius(8)
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .fixedSize()
+                        .position(
+                            x: min(max(textViewRef.selectionRect.midX, 150), geometry.size.width - 150),
+                            y: yPosition
                         )
-                    )
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                                removal: .opacity.combined(with: .scale(scale: 0.98))
+                            )
+                        )
+                }
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: hasSelection)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: textViewRef.selectionRect)
         .onAppear {
             // Set up keyboard shortcut for link insertion
             NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
@@ -255,26 +266,29 @@ struct RichTextEditor: View {
         let range = textView.selectedRange()
         guard range.length > 0 else { return }
 
-        textStorage.beginEditing()
-        textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
-            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-
-            // Get current traits and toggle bold
-            var traits = currentFont.fontDescriptor.symbolicTraits
-            if traits.contains(.bold) {
-                traits.remove(.bold)
-            } else {
-                traits.insert(.bold)
-            }
-
-            // Create new font descriptor with updated traits, preserving size
-            guard let descriptor = currentFont.fontDescriptor.withSymbolicTraits(traits),
-                  let newFont = NSFont(descriptor: descriptor, size: currentFont.pointSize) else {
-                return
-            }
-
-            textStorage.addAttribute(.font, value: newFont, range: subrange)
+        // Check current bold state at start of selection
+        let isBold: Bool
+        if let font = textStorage.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont {
+            isBold = font.fontDescriptor.symbolicTraits.contains(.bold)
+        } else {
+            isBold = false
         }
+
+        textStorage.beginEditing()
+
+        if isBold {
+            // Remove bold by converting each font
+            textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
+                guard let currentFont = value as? NSFont else { return }
+                let fontManager = NSFontManager.shared
+                let newFont = fontManager.convert(currentFont, toNotHaveTrait: .boldFontMask)
+                textStorage.addAttribute(.font, value: newFont, range: subrange)
+            }
+        } else {
+            // Add bold using applyFontTraits
+            textStorage.applyFontTraits(.boldFontMask, range: range)
+        }
+
         textStorage.endEditing()
     }
 
@@ -285,26 +299,29 @@ struct RichTextEditor: View {
         let range = textView.selectedRange()
         guard range.length > 0 else { return }
 
-        textStorage.beginEditing()
-        textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
-            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-
-            // Get current traits and toggle italic
-            var traits = currentFont.fontDescriptor.symbolicTraits
-            if traits.contains(.italic) {
-                traits.remove(.italic)
-            } else {
-                traits.insert(.italic)
-            }
-
-            // Create new font descriptor with updated traits, preserving size
-            guard let descriptor = currentFont.fontDescriptor.withSymbolicTraits(traits),
-                  let newFont = NSFont(descriptor: descriptor, size: currentFont.pointSize) else {
-                return
-            }
-
-            textStorage.addAttribute(.font, value: newFont, range: subrange)
+        // Check current italic state at start of selection
+        let isItalic: Bool
+        if let font = textStorage.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont {
+            isItalic = font.fontDescriptor.symbolicTraits.contains(.italic)
+        } else {
+            isItalic = false
         }
+
+        textStorage.beginEditing()
+
+        if isItalic {
+            // Remove italic by converting each font
+            textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
+                guard let currentFont = value as? NSFont else { return }
+                let fontManager = NSFontManager.shared
+                let newFont = fontManager.convert(currentFont, toNotHaveTrait: .italicFontMask)
+                textStorage.addAttribute(.font, value: newFont, range: subrange)
+            }
+        } else {
+            // Add italic using applyFontTraits
+            textStorage.applyFontTraits(.italicFontMask, range: range)
+        }
+
         textStorage.endEditing()
     }
 

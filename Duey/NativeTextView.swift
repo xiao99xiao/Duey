@@ -13,6 +13,7 @@ import Combine
 class TextViewRef: ObservableObject {
     weak var textView: NSTextView?
     @Published var hasSelection = false
+    @Published var selectionRect: CGRect = .zero
 }
 
 /// SwiftUI wrapper for DueyTextView with bidirectional text synchronization
@@ -35,9 +36,10 @@ struct NativeTextView: NSViewRepresentable {
             textView.isRichText = true
             textView.allowsUndo = true
             textView.font = .systemFont(ofSize: NSFont.systemFontSize)
-            textView.textColor = .textColor
+            textView.textColor = .labelColor  // Use labelColor for better dark mode support
             textView.backgroundColor = .clear
             textView.drawsBackground = false
+            textView.usesAdaptiveColorMappingForDarkAppearance = true  // Enable adaptive colors
             textView.isAutomaticQuoteSubstitutionEnabled = false
             textView.isAutomaticDashSubstitutionEnabled = false
             textView.isAutomaticTextReplacementEnabled = false
@@ -125,8 +127,8 @@ struct NativeTextView: NSViewRepresentable {
 
             // Convert NSAttributedString to AttributedString
             let nsAttributedString = textView.attributedString()
-            if let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
 
+            if let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
                 // Only update binding if text actually changed
                 if attributedString != text {
                     text = attributedString
@@ -140,8 +142,41 @@ struct NativeTextView: NSViewRepresentable {
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            // Update selection state for toolbar
-            textViewRef.hasSelection = textView.selectedRange().length > 0
+
+            let selectedRange = textView.selectedRange()
+            let hasSelection = selectedRange.length > 0
+
+            // Calculate selection rect if there's a selection
+            var selectionRect = CGRect.zero
+            if hasSelection,
+               let layoutManager = textView.layoutManager,
+               let textContainer = textView.textContainer {
+
+                // Convert character range to glyph range
+                let glyphRange = layoutManager.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
+
+                // Get bounding rect for the glyph range
+                var rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+
+                // Add text container origin
+                let containerOrigin = textView.textContainerOrigin
+                rect.origin.x += containerOrigin.x
+                rect.origin.y += containerOrigin.y
+
+                // Convert to the scroll view's coordinate system (parent of textView)
+                if let scrollView = textView.enclosingScrollView {
+                    rect = textView.convert(rect, to: scrollView)
+                }
+
+                selectionRect = rect
+            }
+
+            // Update published properties
+            // Defer to avoid "Publishing changes from within view updates"
+            DispatchQueue.main.async {
+                self.textViewRef.hasSelection = hasSelection
+                self.textViewRef.selectionRect = selectionRect
+            }
         }
     }
 }
