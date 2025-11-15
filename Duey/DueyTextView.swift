@@ -367,10 +367,14 @@ class DueyTextView: NSTextView {
             attachmentString.append(NSAttributedString(string: " "))
         }
 
-        // Insert or replace
+        // Insert or replace with undo support
+        // beginEditing/endEditing automatically registers undo operations
         textStorage.beginEditing()
         textStorage.replaceCharacters(in: selectedRange, with: attachmentString)
         textStorage.endEditing()
+
+        // Set undo action name for better UX
+        undoManager?.setActionName("Insert Checkbox")
 
         // Move cursor after the checkbox
         let newPosition = cursorPosition + attachmentString.length
@@ -407,6 +411,9 @@ class DueyTextView: NSTextView {
                 textStorage.beginEditing()
                 textStorage.replaceCharacters(in: selectedRange, with: attributedString)
                 textStorage.endEditing()
+
+                // Set undo action name
+                undoManager?.setActionName("Paste Checkboxes")
 
                 // Move cursor to end of pasted content
                 setSelectedRange(NSRange(location: selectedRange.location + attributedString.length, length: 0))

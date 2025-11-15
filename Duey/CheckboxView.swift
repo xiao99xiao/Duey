@@ -54,6 +54,19 @@ class CheckboxView: NSView {
             checkboxButton.topAnchor.constraint(equalTo: topAnchor),
             checkboxButton.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+
+        // Accessibility
+        checkboxButton.setAccessibilityElement(true)
+        checkboxButton.setAccessibilityRole(.checkBox)
+        updateAccessibilityLabel()
+    }
+
+    private func updateAccessibilityLabel() {
+        let stateLabel = attachment.isChecked ? "checked" : "unchecked"
+        let textLabel = attachment.text.isEmpty ? "checkbox" : attachment.text
+
+        checkboxButton.setAccessibilityLabel("\(textLabel), \(stateLabel)")
+        checkboxButton.setAccessibilityValue(attachment.isChecked ? "1" : "0")
     }
 
     // MARK: - State Management
@@ -65,6 +78,9 @@ class CheckboxView: NSView {
     @objc private func checkboxToggled() {
         // Update attachment state
         attachment.isChecked = (checkboxButton.state == .on)
+
+        // Update accessibility
+        updateAccessibilityLabel()
 
         // Animate the change
         NSAnimationContext.runAnimationGroup { context in
@@ -88,5 +104,6 @@ class CheckboxView: NSView {
     override func layout() {
         super.layout()
         updateCheckboxState()
+        updateAccessibilityLabel()
     }
 }
