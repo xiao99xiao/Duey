@@ -353,7 +353,7 @@ class DueyTextView: NSTextView {
         let selectedAttributedText = textStorage.attributedSubstring(from: selectedRange)
 
         // Convert to markdown
-        let markdown = convertToMarkdown(selectedAttributedText)
+        let markdown = convertToMarkdownImpl(selectedAttributedText)
 
         // Put both on pasteboard
         let pasteboard = NSPasteboard.general
@@ -368,8 +368,13 @@ class DueyTextView: NSTextView {
         pasteboard.setString(markdown, forType: .string)
     }
 
+    /// Converts NSAttributedString to markdown format (public static version)
+    static func convertToMarkdown(_ attributedString: NSAttributedString) -> String {
+        return DueyTextView().convertToMarkdownImpl(attributedString)
+    }
+
     /// Converts NSAttributedString to markdown format
-    private func convertToMarkdown(_ attributedString: NSAttributedString) -> String {
+    private func convertToMarkdownImpl(_ attributedString: NSAttributedString) -> String {
         var markdown = ""
         let string = attributedString.string
 
