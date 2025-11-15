@@ -307,34 +307,28 @@ struct DiagnosticsView: View {
         exportedFilePath = nil
         errorMessage = nil
 
-        do {
-            // Create export data
-            let exportTasks = tasks.map { task -> ExportTask in
-                ExportTask(
-                    title: task.title,
-                    content: task.content,
-                    deadline: task.deadline,
-                    isCompleted: task.isCompleted,
-                    createdAt: task.createdAt,
-                    completedAt: task.completedAt
-                )
-            }
-
-            let exportData = ExportData(
-                exportDate: Date(),
-                version: "1.0",
-                taskCount: exportTasks.count,
-                tasks: exportTasks
+        // Create export data
+        let exportTasks = tasks.map { task -> ExportTask in
+            ExportTask(
+                title: task.title,
+                content: task.content,
+                deadline: task.deadline,
+                isCompleted: task.isCompleted,
+                createdAt: task.createdAt,
+                completedAt: task.completedAt
             )
-
-            // Create document and trigger export
-            exportDocument = JSONExportDocument(exportData: exportData)
-            isExporting = true
-
-        } catch {
-            errorMessage = error.localizedDescription
-            print("Export error: \(error)")
         }
+
+        let exportData = ExportData(
+            exportDate: Date(),
+            version: "1.0",
+            taskCount: exportTasks.count,
+            tasks: exportTasks
+        )
+
+        // Create document and trigger export
+        exportDocument = JSONExportDocument(exportData: exportData)
+        isExporting = true
     }
 
     private func generateExportFilename() -> String {
@@ -509,14 +503,14 @@ struct TaskDiagnosticRow: View {
 
 // MARK: - Data Structures
 
-struct ExportData: Codable {
+struct ExportData: Codable, Sendable {
     let exportDate: Date
     let version: String
     let taskCount: Int
     let tasks: [ExportTask]
 }
 
-struct ExportTask: Codable {
+struct ExportTask: Codable, Sendable {
     let title: String
     let content: String?  // Plain text content
     let deadline: Date?
@@ -526,7 +520,7 @@ struct ExportTask: Codable {
 }
 
 // FileDocument for JSON export
-struct JSONExportDocument: FileDocument {
+struct JSONExportDocument: FileDocument, @unchecked Sendable {
     static var readableContentTypes: [UTType] { [.json] }
 
     var exportData: ExportData
