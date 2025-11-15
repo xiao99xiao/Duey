@@ -434,8 +434,10 @@ struct ListContinuationHandler: NSViewRepresentable {
                 if let window = v.window {
                     if let textView = findTextView(in: window.contentView) {
                         self.textView = textView
+                        let typeName = String(describing: type(of: textView))
+                        let address = String(format: "%p", unsafeBitCast(textView, to: Int.self))
                         setupKeyEventMonitor()
-                        print("📝 List continuation [\(shortID)]: ✅ Found and connected to NSTextView (attempt \(retryCount + 1))")
+                        print("📝 List continuation [\(shortID)]: ✅ Found and connected to \(typeName) at \(address) (attempt \(retryCount + 1))")
                         return
                     }
                 }
