@@ -10,7 +10,7 @@ internal import AppKit
 
 struct RichTextEditor: View {
     @Binding var text: AttributedString
-    @State private var selection = AttributedTextSelection()
+    @StateObject private var textViewRef = TextViewRef()
     @Environment(\.fontResolutionContext) var fontResolutionContext
     @State private var showLinkPopover = false
     @State private var linkURL = ""
@@ -19,7 +19,7 @@ struct RichTextEditor: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             // Native Text Editor with built-in auto-list conversion
-            NativeTextView(text: $text)
+            NativeTextView(text: $text, textViewRef: textViewRef)
                 .safeAreaInset(edge: .bottom) {
                     // Reserve space for floating toolbar when visible
                     if hasSelection {
@@ -63,10 +63,7 @@ struct RichTextEditor: View {
     // MARK: - Selection State
 
     private var hasSelection: Bool {
-        guard case .ranges(let ranges) = selection.indices(in: text) else {
-            return false
-        }
-        return !ranges.isEmpty
+        textViewRef.hasSelection
     }
 
     private var formattingToolbar: some View {
@@ -203,164 +200,198 @@ struct RichTextEditor: View {
     // MARK: - Formatting State
 
     private var isBold: Bool {
-        let attributes = selection.typingAttributes(in: text)
-        let currentFont = attributes.font ?? .default
-        let resolved = currentFont.resolve(in: fontResolutionContext)
-        return resolved.isBold
+        guard let textView = textViewRef.textView,
+              let font = textView.typingAttributes[.font] as? NSFont else {
+            return false
+        }
+        return font.fontDescriptor.symbolicTraits.contains(.bold)
     }
 
     private var isItalic: Bool {
-        let attributes = selection.typingAttributes(in: text)
-        let currentFont = attributes.font ?? .default
-        let resolved = currentFont.resolve(in: fontResolutionContext)
-        return resolved.isItalic
+        guard let textView = textViewRef.textView,
+              let font = textView.typingAttributes[.font] as? NSFont else {
+            return false
+        }
+        return font.fontDescriptor.symbolicTraits.contains(.italic)
     }
 
     private var hasUnderline: Bool {
-        let attributes = selection.typingAttributes(in: text)
-        return attributes.underlineStyle != nil
+        guard let textView = textViewRef.textView else { return false }
+        return textView.typingAttributes[.underlineStyle] != nil
     }
 
     private var hasStrikethrough: Bool {
-        let attributes = selection.typingAttributes(in: text)
-        return attributes.strikethroughStyle != nil
+        guard let textView = textViewRef.textView else { return false }
+        return textView.typingAttributes[.strikethroughStyle] != nil
     }
 
     private var hasLink: Bool {
-        let attributes = selection.typingAttributes(in: text)
-        return attributes.link != nil
+        guard let textView = textViewRef.textView else { return false }
+        return textView.typingAttributes[.link] != nil
     }
 
     // MARK: - Formatting Actions
 
     private func prepareLink() {
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
+
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+
         // Pre-fill link text with selected text
-        if case .ranges(let ranges) = selection.indices(in: text), !ranges.isEmpty {
-            for range in ranges.ranges {
-                linkText = String(text[range].characters)
-                // Check if selection already has a link
-                if let existingLink = text[range].runs.first?.link {
-                    linkURL = existingLink.absoluteString
-                }
-                break
-            }
+        linkText = (textStorage.string as NSString).substring(with: range)
+
+        // Check if selection already has a link
+        if let existingLink = textStorage.attribute(.link, at: range.location, effectiveRange: nil) as? URL {
+            linkURL = existingLink.absoluteString
         }
     }
 
     private func toggleBold() {
-        text.transformAttributes(in: &selection) { container in
-            let currentFont = container.font ?? .default
-            let resolved = currentFont.resolve(in: fontResolutionContext)
-            container.font = currentFont.bold(!resolved.isBold)
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
+
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+
+        textStorage.beginEditing()
+        textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
+            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+            let newFont: NSFont
+
+            if currentFont.fontDescriptor.symbolicTraits.contains(.bold) {
+                // Remove bold
+                newFont = NSFontManager.shared.convert(currentFont, toNotHaveTrait: .boldFontMask)
+            } else {
+                // Add bold
+                newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: .boldFontMask)
+            }
+
+            textStorage.addAttribute(.font, value: newFont, range: subrange)
         }
+        textStorage.endEditing()
     }
 
     private func toggleItalic() {
-        text.transformAttributes(in: &selection) { container in
-            let currentFont = container.font ?? .default
-            let resolved = currentFont.resolve(in: fontResolutionContext)
-            container.font = currentFont.italic(!resolved.isItalic)
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
+
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+
+        textStorage.beginEditing()
+        textStorage.enumerateAttribute(.font, in: range) { value, subrange, _ in
+            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+            let newFont: NSFont
+
+            if currentFont.fontDescriptor.symbolicTraits.contains(.italic) {
+                // Remove italic
+                newFont = NSFontManager.shared.convert(currentFont, toNotHaveTrait: .italicFontMask)
+            } else {
+                // Add italic
+                newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: .italicFontMask)
+            }
+
+            textStorage.addAttribute(.font, value: newFont, range: subrange)
         }
+        textStorage.endEditing()
     }
 
     private func toggleUnderline() {
-        text.transformAttributes(in: &selection) { container in
-            if container.underlineStyle != nil {
-                container.underlineStyle = nil
-            } else {
-                container.underlineStyle = .single
-            }
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
+
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+
+        textStorage.beginEditing()
+        let hasUnderline = textStorage.attribute(.underlineStyle, at: range.location, effectiveRange: nil) != nil
+
+        if hasUnderline {
+            textStorage.removeAttribute(.underlineStyle, range: range)
+        } else {
+            textStorage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
         }
+        textStorage.endEditing()
     }
 
     private func toggleStrikethrough() {
-        text.transformAttributes(in: &selection) { container in
-            if container.strikethroughStyle != nil {
-                container.strikethroughStyle = nil
-            } else {
-                container.strikethroughStyle = .single
-            }
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
+
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+
+        textStorage.beginEditing()
+        let hasStrikethrough = textStorage.attribute(.strikethroughStyle, at: range.location, effectiveRange: nil) != nil
+
+        if hasStrikethrough {
+            textStorage.removeAttribute(.strikethroughStyle, range: range)
+        } else {
+            textStorage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: range)
         }
+        textStorage.endEditing()
     }
 
     private func insertBulletPoint() {
-        // Get the insertion point or first range
-        let indices = selection.indices(in: text)
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
 
-        switch indices {
-        case .insertionPoint(let point):
-            // Insert bullet at cursor position
-            var bullet = AttributedString("• ")
-            let typingAttrs = selection.typingAttributes(in: text)
-            bullet.setAttributes(typingAttrs)
-            text.insert(bullet, at: point)
+        let range = textView.selectedRange()
+        let bullet = NSAttributedString(string: "• ", attributes: textView.typingAttributes)
 
-        case .ranges(let rangeSet):
-            // Insert bullet at the start of the first range
-            for range in rangeSet.ranges {
-                var bullet = AttributedString("• ")
-                let typingAttrs = selection.typingAttributes(in: text)
-                bullet.setAttributes(typingAttrs)
-                text.insert(bullet, at: range.lowerBound)
-                break // Only insert at the first range
-            }
-        }
+        textStorage.beginEditing()
+        textStorage.insert(bullet, at: range.location)
+        textStorage.endEditing()
+
+        textView.setSelectedRange(NSRange(location: range.location + bullet.length, length: 0))
     }
 
     private func insertNumberedPoint() {
-        // Get the insertion point or first range
-        let indices = selection.indices(in: text)
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
 
-        switch indices {
-        case .insertionPoint(let point):
-            // Insert numbered point at cursor position
-            var number = AttributedString("1. ")
-            let typingAttrs = selection.typingAttributes(in: text)
-            number.setAttributes(typingAttrs)
-            text.insert(number, at: point)
+        let range = textView.selectedRange()
+        let number = NSAttributedString(string: "1. ", attributes: textView.typingAttributes)
 
-        case .ranges(let rangeSet):
-            // Insert numbered point at the start of the first range
-            for range in rangeSet.ranges {
-                var number = AttributedString("1. ")
-                let typingAttrs = selection.typingAttributes(in: text)
-                number.setAttributes(typingAttrs)
-                text.insert(number, at: range.lowerBound)
-                break // Only insert at the first range
-            }
-        }
+        textStorage.beginEditing()
+        textStorage.insert(number, at: range.location)
+        textStorage.endEditing()
+
+        textView.setSelectedRange(NSRange(location: range.location + number.length, length: 0))
     }
 
     private func insertLink() {
-        guard let url = URL(string: linkURL) else { return }
+        guard let url = URL(string: linkURL),
+              let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
 
-        let indices = selection.indices(in: text)
+        let range = textView.selectedRange()
 
-        switch indices {
-        case .insertionPoint(let point):
+        textStorage.beginEditing()
+        if range.length == 0 {
             // Insert new link with provided text
             let displayText = linkText.isEmpty ? linkURL : linkText
-            var linkString = AttributedString(displayText)
-            let typingAttrs = selection.typingAttributes(in: text)
-            linkString.setAttributes(typingAttrs)
-            linkString.link = url
-            text.insert(linkString, at: point)
+            var attrs = textView.typingAttributes
+            attrs[.link] = url
+            let linkString = NSAttributedString(string: displayText, attributes: attrs)
 
-        case .ranges(let rangeSet):
+            textStorage.insert(linkString, at: range.location)
+        } else {
             // Apply link to selected text
-            for range in rangeSet.ranges {
-                text[range].link = url
-                // If link text was provided, replace the selected text
-                if !linkText.isEmpty {
-                    var linkString = AttributedString(linkText)
-                    let existingAttrs = text[range].runs.first?.attributes ?? AttributeContainer()
-                    linkString.setAttributes(existingAttrs)
-                    linkString.link = url
-                    text.replaceSubrange(range, with: linkString)
-                }
-                break // Only apply to first range
+            textStorage.addAttribute(.link, value: url, range: range)
+
+            // If link text was provided, replace the selected text
+            if !linkText.isEmpty {
+                let existingAttrs = textStorage.attributes(at: range.location, effectiveRange: nil)
+                var attrs = existingAttrs
+                attrs[.link] = url
+                let linkString = NSAttributedString(string: linkText, attributes: attrs)
+                textStorage.replaceCharacters(in: range, with: linkString)
             }
         }
+        textStorage.endEditing()
 
         // Reset state
         showLinkPopover = false

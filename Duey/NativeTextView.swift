@@ -7,10 +7,18 @@
 
 import SwiftUI
 internal import AppKit
+import Combine
+
+/// Observable object that holds reference to NSTextView for formatting toolbar access
+class TextViewRef: ObservableObject {
+    weak var textView: NSTextView?
+    @Published var hasSelection = false
+}
 
 /// SwiftUI wrapper for DueyTextView with bidirectional text synchronization
 struct NativeTextView: NSViewRepresentable {
     @Binding var text: AttributedString
+    let textViewRef: TextViewRef
 
     func makeNSView(context: Context) -> NSScrollView {
         // Create scroll view
@@ -53,8 +61,9 @@ struct NativeTextView: NSViewRepresentable {
                 textView.textStorage?.setAttributedString(nsAttributedString)
             }
 
-            // Store reference in coordinator
+            // Store reference in coordinator and expose to SwiftUI
             context.coordinator.textView = textView
+            textViewRef.textView = textView
         }
 
         return scrollView
@@ -86,7 +95,7 @@ struct NativeTextView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
+        Coordinator(text: $text, textViewRef: textViewRef)
     }
 
     // MARK: - Coordinator
@@ -94,12 +103,14 @@ struct NativeTextView: NSViewRepresentable {
     class Coordinator: NSObject, NSTextViewDelegate {
         @Binding var text: AttributedString
         weak var textView: DueyTextView?
+        let textViewRef: TextViewRef
 
         // Track if user is actively editing (prevents updateNSView from interfering)
         var isEditingText = false
 
-        init(text: Binding<AttributedString>) {
+        init(text: Binding<AttributedString>, textViewRef: TextViewRef) {
             self._text = text
+            self.textViewRef = textViewRef
             super.init()
         }
 
@@ -125,6 +136,12 @@ struct NativeTextView: NSViewRepresentable {
 
         func textDidEndEditing(_ notification: Notification) {
             isEditingText = false
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            // Update selection state for toolbar
+            textViewRef.hasSelection = textView.selectedRange().length > 0
         }
     }
 }
