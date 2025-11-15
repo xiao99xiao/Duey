@@ -18,19 +18,8 @@ struct RichTextEditor: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Text Editor
-            TextEditor(text: $text, selection: $selection)
-                .font(.body)
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
-                .background(
-                    // Add list continuation support
-                    ListContinuationHandler(text: $text)
-                )
-                .background(
-                    // Add markdown copy support
-                    MarkdownCopyHandler()
-                )
+            // Native Text Editor with built-in auto-list conversion
+            NativeTextView(text: $text)
                 .safeAreaInset(edge: .bottom) {
                     // Reserve space for floating toolbar when visible
                     if hasSelection {
