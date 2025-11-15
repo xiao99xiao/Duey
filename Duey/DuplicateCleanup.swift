@@ -2,7 +2,7 @@
 //  DuplicateCleanup.swift
 //  Duey
 //
-//  Utility to clean up duplicate tasks caused by migration issue
+//  Utility to clean up duplicate tasks
 //
 
 import Foundation

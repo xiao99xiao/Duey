@@ -323,6 +323,8 @@ struct TroubleshootingTab: View {
 
     @State private var isCleaningDuplicates = false
     @State private var cleanupMessage: String?
+    @State private var showingResetConfirmation = false
+    @State private var resetMessage: String?
 
     var body: some View {
         Form {
@@ -371,6 +373,45 @@ struct TroubleshootingTab: View {
                     }
                 }
             }
+
+            Section("Reset Database") {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                        Text("Danger Zone")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.red)
+                    }
+
+                    Text("Permanently delete ALL tasks and reset the database to a clean state. This action syncs to iCloud and CANNOT be undone.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Button("Reset Database") {
+                        showingResetConfirmation = true
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                    .alert("Reset Database?", isPresented: $showingResetConfirmation) {
+                        Button("Cancel", role: .cancel) {}
+                        Button("Delete Everything", role: .destructive) {
+                            resetDatabase()
+                        }
+                    } message: {
+                        Text("This will permanently delete ALL tasks from this device and iCloud. This action cannot be undone.\n\nAre you absolutely sure?")
+                    }
+
+                    if let message = resetMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(message.contains("Error") ? .red : .green)
+                            .padding(.top, 4)
+                    }
+                }
+            }
         }
         .formStyle(.grouped)
         .padding(20)
@@ -392,6 +433,32 @@ struct TroubleshootingTab: View {
             // Clear message after 5 seconds
             try? await _Concurrency.Task.sleep(for: .seconds(5))
             cleanupMessage = nil
+        }
+    }
+
+    private func resetDatabase() {
+        resetMessage = nil
+
+        _Concurrency.Task { @MainActor in
+            do {
+                // Delete all Task objects
+                // This will automatically sync to CloudKit/iCloud
+                try modelContext.delete(model: Task.self)
+
+                // Save the changes
+                try modelContext.save()
+
+                resetMessage = "✓ Database reset successfully. All tasks deleted."
+                print("Database reset: All tasks deleted and synced to CloudKit")
+
+                // Clear message after 10 seconds
+                try? await _Concurrency.Task.sleep(for: .seconds(10))
+                resetMessage = nil
+
+            } catch {
+                resetMessage = "Error: \(error.localizedDescription)"
+                print("Database reset error: \(error)")
+            }
         }
     }
 }
