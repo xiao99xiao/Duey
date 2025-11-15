@@ -15,13 +15,13 @@ struct ContentView: View {
     @EnvironmentObject private var appSettings: AppSettings
     @EnvironmentObject private var smartTaskCapture: SmartTaskCapture
 
-    @Query private var tasks: [Task]
-    @State private var selectedTask: Task?
-    @State private var pendingNewTask: Task?
-    @State private var deletedTaskBackup: Task?
+    @Query private var tasks: [DueyTask]
+    @State private var selectedTask: DueyTask?
+    @State private var pendingNewTask: DueyTask?
+    @State private var deletedTaskBackup: DueyTask?
     @State private var showDeleteToast = false
 
-    var sortedTasks: [Task] {
+    var sortedTasks: [DueyTask] {
         let unfinishedTasks = tasks.filter { !$0.isCompleted }
             .sorted { (task1, task2) in
                 if let deadline1 = task1.deadline, let deadline2 = task2.deadline {
@@ -138,7 +138,7 @@ struct ContentView: View {
         }
     }
 
-    private func handleTaskSelectionChange(from oldTask: Task?, to newTask: Task?) {
+    private func handleTaskSelectionChange(from oldTask: DueyTask?, to newTask: DueyTask?) {
         if let pendingTask = pendingNewTask,
            oldTask?.id == pendingTask.id,
            pendingTask.title.isEmpty {
@@ -152,14 +152,14 @@ struct ContentView: View {
 
         withAnimation(.easeInOut(duration: 0.3)) {
             // Create a new task with the same properties
-            let restoredTask = Task(
+            let restoredTask = DueyTask(
                 title: deletedTask.title,
-                content: deletedTask.content,
                 deadline: deletedTask.deadline,
                 isCompleted: deletedTask.isCompleted
             )
             restoredTask.createdAt = deletedTask.createdAt
             restoredTask.completedAt = deletedTask.completedAt
+            restoredTask.contentRTF = deletedTask.contentRTF
 
             modelContext.insert(restoredTask)
             selectedTask = restoredTask
@@ -180,7 +180,7 @@ struct ContentView: View {
 }
 
 struct EmptyStateView: View {
-    @Binding var pendingNewTask: Task?
+    @Binding var pendingNewTask: DueyTask?
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
@@ -239,5 +239,5 @@ struct DeleteToastView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Task.self, inMemory: true)
+        .modelContainer(for: DueyTask.self, inMemory: true)
 }

@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 struct DiagnosticsView: View {
     let modelContext: ModelContext
 
-    @State private var tasks: [Task] = []
+    @State private var tasks: [DueyTask] = []
     @State private var isExporting = false
     @State private var exportedFilePath: String?
     @State private var errorMessage: String?
@@ -288,7 +288,7 @@ struct DiagnosticsView: View {
         _Concurrency.Task { @MainActor in
             do {
                 // Fetch all tasks
-                let descriptor = FetchDescriptor<Task>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+                let descriptor = FetchDescriptor<DueyTask>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
                 tasks = try modelContext.fetch(descriptor)
 
                 print("Diagnostics: Found \(tasks.count) tasks in CloudKit")
@@ -405,7 +405,7 @@ struct DiagnosticsView: View {
                 }
 
                 // Create new task
-                let newTask = Task(
+                let newTask = DueyTask(
                     title: exportTask.title,
                     deadline: exportTask.deadline,
                     isCompleted: exportTask.isCompleted
@@ -458,7 +458,7 @@ struct InfoRow: View {
 }
 
 struct TaskDiagnosticRow: View {
-    let task: Task
+    let task: DueyTask
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {

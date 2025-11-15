@@ -12,7 +12,7 @@ struct MenuBarView: View {
     @EnvironmentObject var appSettings: AppSettings
     @Environment(\.openWindow) private var openWindow
     @Environment(\.modelContext) private var modelContext
-    @Query(filter: #Predicate<Task> { !$0.isCompleted }) private var unfinishedTasks: [Task]
+    @Query(filter: #Predicate<DueyTask> { !$0.isCompleted }) private var unfinishedTasks: [DueyTask]
 
     var body: some View {
         // Show Duey

@@ -443,7 +443,7 @@ struct TroubleshootingTab: View {
             do {
                 // Delete all Task objects
                 // This will automatically sync to CloudKit/iCloud
-                try modelContext.delete(model: Task.self)
+                try modelContext.delete(model: DueyTask.self)
 
                 // Save the changes
                 try modelContext.save()
@@ -470,5 +470,5 @@ extension Notification.Name {
 
 #Preview {
     SettingsView()
-        .modelContainer(for: Task.self, inMemory: true)
+        .modelContainer(for: DueyTask.self, inMemory: true)
 }

@@ -19,7 +19,7 @@ struct DueyApp: App {
     static let sharedModelContainer: ModelContainer = {
         do {
             // Simple schema - original working version
-            let schema = Schema([Task.self])
+            let schema = Schema([DueyTask.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             let container = try ModelContainer(for: schema, configurations: [config])
 
@@ -36,19 +36,19 @@ struct DueyApp: App {
     @MainActor
     private static func initializeCloudKitSchema(for container: ModelContainer) throws {
         // Convert SwiftData model to Core Data NSManagedObjectModel
-        guard let managedObjectModel = NSManagedObjectModel.makeManagedObjectModel(for: [Task.self]) else {
+        guard let managedObjectModel = NSManagedObjectModel.makeManagedObjectModel(for: [DueyTask.self]) else {
             print("Failed to create NSManagedObjectModel")
             return
         }
 
         // Get the configuration URL
-        let config = ModelConfiguration(schema: Schema([Task.self]), isStoredInMemoryOnly: false)
+        let config = ModelConfiguration(schema: Schema([DueyTask.self]), isStoredInMemoryOnly: false)
 
         // Create persistent store description
         let storeDescription = NSPersistentStoreDescription(url: config.url)
 
         // Configure CloudKit options with the container identifier from entitlements
-        let cloudKitOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.xiao99xiao.Duey")
+        let cloudKitOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.xiaoxiao.todoapp")
         storeDescription.cloudKitContainerOptions = cloudKitOptions
 
         // Create a temporary CloudKit container

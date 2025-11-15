@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct RichTextEditorView: View {
-    @Bindable var task: Task
+    @Bindable var task: DueyTask
     @State private var editingText: AttributedString = AttributedString("")
     @State private var hasLoaded = false
 

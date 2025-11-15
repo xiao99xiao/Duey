@@ -43,7 +43,7 @@ extension TaskListControl {
         func currentValue() async throws -> Int {
             // Return the number of unfinished tasks using CloudKit
             do {
-                let schema = Schema([Task.self])
+                let schema = Schema([DueyTask.self])
                 var modelContainer: ModelContainer?
 
                 // First attempt: with CloudKit (same as main app)
@@ -69,7 +69,7 @@ extension TaskListControl {
 
                 let context = ModelContext(container)
 
-                let descriptor = FetchDescriptor<Task>(
+                let descriptor = FetchDescriptor<DueyTask>(
                     predicate: #Predicate { !$0.isCompleted }
                 )
 

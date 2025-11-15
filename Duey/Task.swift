@@ -10,7 +10,7 @@ import SwiftData
 import SwiftUI
 
 @Model
-final class Task {
+final class DueyTask {
     var title: String = ""
     var contentRTF: Data?  // RTF formatted content
     var deadline: Date?

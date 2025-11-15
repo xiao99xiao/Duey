@@ -16,13 +16,13 @@ class DuplicateCleanup {
         print("Starting duplicate cleanup...")
 
         // Fetch all tasks
-        let descriptor = FetchDescriptor<Task>(sortBy: [SortDescriptor(\.createdAt)])
+        let descriptor = FetchDescriptor<DueyTask>(sortBy: [SortDescriptor(\.createdAt)])
         let tasks = try modelContext.fetch(descriptor)
 
         print("Found \(tasks.count) total tasks")
 
         // Group tasks by key (title + deadline + createdAt within 1 second)
-        var taskGroups: [String: [Task]] = [:]
+        var taskGroups: [String: [DueyTask]] = [:]
 
         for task in tasks {
             let key = makeTaskKey(task)
@@ -54,7 +54,7 @@ class DuplicateCleanup {
     }
 
     /// Create a unique key for task comparison
-    private static func makeTaskKey(_ task: Task) -> String {
+    private static func makeTaskKey(_ task: DueyTask) -> String {
         let titleKey = task.title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         let deadlineKey = task.deadline?.timeIntervalSince1970.description ?? "no-deadline"
         // Round creation time to nearest second to catch near-duplicates

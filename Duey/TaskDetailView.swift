@@ -10,8 +10,8 @@ import SwiftData
 import WidgetKit
 
 struct TaskDetailView: View {
-    @Bindable var task: Task
-    @Binding var pendingNewTask: Task?
+    @Bindable var task: DueyTask
+    @Binding var pendingNewTask: DueyTask?
     @State private var showingDatePicker = false
     @State private var showingTimePicker = false
     @Environment(\.modelContext) private var modelContext
@@ -72,7 +72,7 @@ struct TaskDetailView: View {
 }
 
 struct TaskHeaderView: View {
-    @Bindable var task: Task
+    @Bindable var task: DueyTask
     @Binding var showingDatePicker: Bool
     @Binding var showingTimePicker: Bool
     @FocusState.Binding var titleFocused: Bool
@@ -133,7 +133,7 @@ struct TaskHeaderView: View {
                                         task.deadline = calendar.date(from: combined)
                                     } else {
                                         // Set new date with default time (18:00)
-                                        task.deadline = Task.defaultDeadlineTime(for: newDate)
+                                        task.deadline = DueyTask.defaultDeadlineTime(for: newDate)
                                     }
                                 }
                             ),
@@ -162,7 +162,7 @@ struct TaskHeaderView: View {
                         DatePicker(
                             "Time",
                             selection: Binding(
-                                get: { task.deadline ?? Task.defaultDeadlineTime(for: Date()) },
+                                get: { task.deadline ?? DueyTask.defaultDeadlineTime(for: Date()) },
                                 set: { newTime in
                                     if let existingDeadline = task.deadline {
                                         // Preserve date, update time

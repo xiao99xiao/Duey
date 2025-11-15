@@ -154,7 +154,7 @@ class SmartTaskCapture: ObservableObject {
         }
 
         // Note: content parameter is ignored - RTF formatting will be added by user in editor
-        let newTask = Task(title: title, deadline: deadline, isCompleted: false)
+        let newTask = DueyTask(title: title, deadline: deadline, isCompleted: false)
         modelContext.insert(newTask)
 
         do {

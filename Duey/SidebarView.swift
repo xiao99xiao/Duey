@@ -10,11 +10,11 @@ import SwiftData
 import WidgetKit
 
 struct SidebarView: View {
-    let tasks: [Task]
-    @Binding var selectedTask: Task?
-    @Binding var pendingNewTask: Task?
+    let tasks: [DueyTask]
+    @Binding var selectedTask: DueyTask?
+    @Binding var pendingNewTask: DueyTask?
     let modelContext: ModelContext
-    let onTaskDeleted: (Task) -> Void
+    let onTaskDeleted: (DueyTask) -> Void
 
     var body: some View {
         List(selection: $selectedTask) {
@@ -46,7 +46,7 @@ struct SidebarView: View {
     }
 
     private func createNewTask() {
-        let newTask = Duey.Task(title: "", content: nil, deadline: nil, isCompleted: false)
+        let newTask = Duey.DueyTask(title: "", deadline: nil, isCompleted: false)
         modelContext.insert(newTask)
         pendingNewTask = newTask
         selectedTask = newTask
@@ -57,7 +57,7 @@ struct SidebarView: View {
 
     private func deleteTask(at offsets: IndexSet) {
         withAnimation {
-            var newSelectedTask: Task? = nil
+            var newSelectedTask: DueyTask? = nil
 
             for index in offsets {
                 let task = tasks[index]
@@ -96,7 +96,7 @@ struct SidebarView: View {
 }
 
 struct TaskRowView: View {
-    let task: Task
+    let task: DueyTask
 
     var body: some View {
         HStack(spacing: 8) {
