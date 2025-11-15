@@ -368,9 +368,49 @@ class DueyTextView: NSTextView {
         setSelectedRange(NSRange(location: newPosition, length: 0))
     }
 
-    // MARK: - Markdown Copy
+    // MARK: - Markdown Copy/Paste
 
-    /// Override copy to export selected text as markdown
+    /// Override paste to import markdown checkboxes (markdown format → CheckboxAttachment)
+    override func paste(_ sender: Any?) {
+        let pasteboard = NSPasteboard.general
+
+        // Check if pasteboard contains plain text
+        if let plainText = pasteboard.string(forType: .string),
+           plainText.contains("- [") {
+
+            // Check if it looks like markdown checkboxes
+            let checkboxPattern = "- \\[([ x])\\]"
+            if let _ = try? NSRegularExpression(pattern: checkboxPattern).firstMatch(
+                in: plainText,
+                range: NSRange(location: 0, length: plainText.utf16.count)
+            ) {
+                // Convert markdown to attributed string with checkboxes
+                let attributes = typingAttributes
+                let attributedString = CheckboxMarkdownConverter.fromMarkdown(plainText, attributes: attributes)
+
+                // Insert at current position
+                guard let textStorage = textStorage else {
+                    super.paste(sender)
+                    return
+                }
+
+                let selectedRange = selectedRange()
+                textStorage.beginEditing()
+                textStorage.replaceCharacters(in: selectedRange, with: attributedString)
+                textStorage.endEditing()
+
+                // Move cursor to end of pasted content
+                setSelectedRange(NSRange(location: selectedRange.location + attributedString.length, length: 0))
+
+                return
+            }
+        }
+
+        // If not markdown checkboxes, use default paste behavior
+        super.paste(sender)
+    }
+
+    /// Override copy to export selected text as markdown (checkboxes → markdown format)
     override func copy(_ sender: Any?) {
         guard let textStorage = textStorage else {
             super.copy(sender)
@@ -395,7 +435,8 @@ class DueyTextView: NSTextView {
             pasteboard.setData(rtfData, forType: .rtf)
         }
 
-        // Add plain text
-        pasteboard.setString(selectedAttributedText.string, forType: .string)
+        // Add plain text with markdown checkbox conversion
+        let markdownText = CheckboxMarkdownConverter.toMarkdown(selectedAttributedText)
+        pasteboard.setString(markdownText, forType: .string)
     }
 }
