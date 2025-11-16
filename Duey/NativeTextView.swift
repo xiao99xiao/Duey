@@ -114,6 +114,15 @@ struct NativeTextView: NSViewRepresentable {
             return
         }
 
+        print("   Converted to NSAttributedString, length: \(newNSAttributedString.length)")
+
+        // Check for attachments before restoring
+        newNSAttributedString.enumerateAttribute(.attachment, in: NSRange(location: 0, length: newNSAttributedString.length)) { value, range, _ in
+            if let attachment = value as? NSTextAttachment {
+                print("   Found attachment before restore: \(type(of: attachment))")
+            }
+        }
+
         // CRITICAL: Restore CheckboxAttachments from generic NSTextAttachments
         // AttributedString → NSAttributedString conversion loses CheckboxAttachment subclass
         let mutableNewAttrString = NSMutableAttributedString(attributedString: newNSAttributedString)

@@ -9,7 +9,8 @@ internal import AppKit
 import Foundation
 
 /// Custom text attachment that represents an interactive checkbox
-class CheckboxAttachment: NSTextAttachment {
+class CheckboxAttachment: NSTextAttachment, NSSecureCoding {
+    static var supportsSecureCoding: Bool { return true }
 
     // MARK: - Properties
 
@@ -105,18 +106,46 @@ class CheckboxAttachment: NSTextAttachment {
     static func restoreCheckboxes(in attributedString: NSMutableAttributedString) {
         let range = NSRange(location: 0, length: attributedString.length)
 
+        print("🔄 restoreCheckboxes() called, length: \(attributedString.length)")
+
+        var restoredCount = 0
+
         // Find all generic NSTextAttachments that have our checkbox JSON data
         attributedString.enumerateAttribute(.attachment, in: range) { value, attachmentRange, _ in
-            guard let attachment = value as? NSTextAttachment,
-                  !(attachment is CheckboxAttachment), // Skip if already CheckboxAttachment
-                  let contents = attachment.contents,
-                  let checkboxAttachment = CheckboxAttachment.from(data: contents) else {
+            print("   Found attachment at range \(attachmentRange)")
+
+            guard let attachment = value as? NSTextAttachment else {
+                print("   ⚠️ Not an NSTextAttachment")
                 return
             }
 
+            print("   Attachment type: \(type(of: attachment))")
+
+            if attachment is CheckboxAttachment {
+                print("   ✅ Already CheckboxAttachment, skipping")
+                return
+            }
+
+            guard let contents = attachment.contents else {
+                print("   ⚠️ No contents data")
+                return
+            }
+
+            print("   Contents size: \(contents.count) bytes")
+
+            guard let checkboxAttachment = CheckboxAttachment.from(data: contents) else {
+                print("   ⚠️ Failed to parse as CheckboxAttachment")
+                return
+            }
+
+            print("   ✅ Restored CheckboxAttachment: \(checkboxAttachment.id)")
+
             // Replace generic attachment with CheckboxAttachment
             attributedString.addAttribute(.attachment, value: checkboxAttachment, range: attachmentRange)
+            restoredCount += 1
         }
+
+        print("🔄 restoreCheckboxes() finished: restored \(restoredCount) checkboxes")
     }
 
     // MARK: - View Provider
