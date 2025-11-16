@@ -20,7 +20,9 @@ struct RichTextEditor: View {
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 // Native Text Editor with built-in auto-list conversion
+                // ID prevents SwiftUI from recreating the view when toolbar animates
                 NativeTextView(text: $text, textViewRef: textViewRef)
+                    .id("text-editor")
 
                 // Formatting Toolbar (appears when text is selected, positioned above or below selection)
                 if hasSelection, textViewRef.selectionRect != .zero {

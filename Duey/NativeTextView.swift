@@ -38,6 +38,8 @@ struct NativeTextView: NSViewRepresentable {
     let textViewRef: TextViewRef
 
     func makeNSView(context: Context) -> NSScrollView {
+        print("🏗️ makeNSView called - creating new NSScrollView and NSTextView")
+
         // Create scroll view
         let scrollView = NSTextView.scrollableTextView()
         scrollView.hasVerticalScroller = true
@@ -90,23 +92,34 @@ struct NativeTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? DueyTextView else { return }
 
+        print("📝 updateNSView called")
+        print("   isEditingText: \(context.coordinator.isEditingText)")
+
         // CRITICAL: Don't update NSTextView while user is editing
         // This prevents destroying formatting and breaking Return key
-        guard !context.coordinator.isEditingText else { return }
+        guard !context.coordinator.isEditingText else {
+            print("   ⏭️ Skipping - user is editing")
+            return
+        }
 
         // Check if current text has CheckboxAttachments
         let currentAttributedString = textView.attributedString()
         let hasCheckboxes = currentAttributedString.containsAttachments(ofType: CheckboxAttachment.self)
 
+        print("   hasCheckboxes in current text: \(hasCheckboxes)")
+
         // CRITICAL: Don't replace text if it contains CheckboxAttachments
         // The AttributedString → NSAttributedString conversion loses custom attachment subclasses
         if hasCheckboxes {
+            print("   ⏭️ Skipping - would destroy CheckboxAttachments")
             return
         }
 
         // Only update if text actually changed (external change, like loading a task)
         if let newNSAttributedString = try? NSAttributedString(text, including: \.appKit),
            !currentAttributedString.isEqual(to: newNSAttributedString) {
+
+            print("   🔄 Updating text - content changed")
 
             // Preserve current selection
             let savedRange = textView.selectedRange()
@@ -118,6 +131,8 @@ struct NativeTextView: NSViewRepresentable {
             if savedRange.location + savedRange.length <= textView.string.count {
                 textView.setSelectedRange(savedRange)
             }
+        } else {
+            print("   ⏭️ Skipping - text unchanged")
         }
     }
 
@@ -176,10 +191,31 @@ struct NativeTextView: NSViewRepresentable {
             // Convert NSAttributedString to AttributedString
             let nsAttributedString = textView.attributedString()
 
+            print("🔄 textDidChange called")
+            print("   nsAttributedString length: \(nsAttributedString.length)")
+
+            let hasCheckboxes = nsAttributedString.containsAttachments(ofType: CheckboxAttachment.self)
+            print("   has CheckboxAttachments: \(hasCheckboxes)")
+
+            // CRITICAL: Don't update binding if text contains CheckboxAttachments
+            // AttributedString conversion loses custom NSTextAttachment subclasses
+            // Force TextKit 2 to refresh attachment views
+            if hasCheckboxes {
+                print("   ⚠️ Has checkboxes - forcing layout refresh")
+                if let textLayoutManager = textView.textLayoutManager,
+                   let fullRange = NSTextRange(location: textLayoutManager.documentRange.location, end: textLayoutManager.documentRange.endLocation) {
+                    textLayoutManager.invalidateLayout(for: fullRange)
+                }
+                return
+            }
+
             if let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
                 // Only update binding if text actually changed
                 if attributedString != text {
+                    print("   📤 Updating text binding (this will trigger updateNSView)")
                     text = attributedString
+                } else {
+                    print("   ⏭️ Text unchanged, not updating binding")
                 }
             }
         }
@@ -193,6 +229,10 @@ struct NativeTextView: NSViewRepresentable {
 
             let selectedRange = textView.selectedRange()
             let hasSelection = selectedRange.length > 0
+
+            print("🎯 textViewDidChangeSelection")
+            print("   selectedRange: \(selectedRange)")
+            print("   hasSelection: \(hasSelection)")
 
             // Calculate selection rect if there's a selection
             var selectionRect = CGRect.zero
