@@ -361,9 +361,13 @@ class DueyTextView: NSTextView {
         // Create checkbox attachment without text
         let checkbox = CheckboxAttachment(isChecked: false, text: "")
 
+        // Get attributes safely - use position before lineStart if lineStart is at the end
+        let attrPosition = lineStart < textStorage.length ? lineStart : max(0, textStorage.length - 1)
+        let attrs = textStorage.length > 0 ? textStorage.attributes(at: attrPosition, effectiveRange: nil) : typingAttributes
+
         // Create attributed string with the attachment and a space
         let attachmentString = NSMutableAttributedString(attachment: checkbox)
-        attachmentString.append(NSAttributedString(string: " ", attributes: textStorage.attributes(at: lineStart, effectiveRange: nil)))
+        attachmentString.append(NSAttributedString(string: " ", attributes: attrs))
 
         // Insert at the start of the line with undo support
         textStorage.beginEditing()
