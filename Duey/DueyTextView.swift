@@ -359,13 +359,28 @@ class DueyTextView: NSTextView {
 
         guard let textStorage = textStorage else { return }
 
+        var checkboxRanges: [NSRange] = []
+
         textStorage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: textStorage.length)) { value, range, stop in
-            if let checkbox = value as? CheckboxAttachment {
-                checkboxAttachmentCache.append(checkbox)
+            if let attachment = value as? NSTextAttachment {
+                print("   Found attachment at range \(range): type=\(type(of: attachment))")
+                if let checkbox = attachment as? CheckboxAttachment {
+                    checkboxAttachmentCache.append(checkbox)
+                    checkboxRanges.append(range)
+                } else {
+                    print("   ⚠️ Attachment is NOT CheckboxAttachment!")
+                }
             }
         }
 
         print("🔒 Refreshed checkbox cache: \(checkboxAttachmentCache.count) checkboxes")
+
+        // Force TextKit 2 to recreate views by editing then invalidating
+        if !checkboxRanges.isEmpty, let textLayoutManager = textLayoutManager {
+            for range in checkboxRanges {
+                textStorage.edited(.editedAttributes, range: range, changeInLength: 0)
+            }
+        }
     }
 
     /// Inserts a checkbox at the start of the current line

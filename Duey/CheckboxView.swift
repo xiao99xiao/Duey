@@ -118,5 +118,8 @@ class CheckboxView: NSView {
         super.layout()
         updateCheckboxState()
         updateAccessibilityLabel()
+
+        print("   📐 CheckboxView.layout called for id: \(attachment.id)")
+        print("      frame: \(frame), superview: \(String(describing: superview))")
     }
 }
