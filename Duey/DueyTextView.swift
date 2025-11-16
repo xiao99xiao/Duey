@@ -155,9 +155,9 @@ class DueyTextView: NSTextView {
         if lineStart < textStorage.length,
            let attachment = textStorage.attribute(.attachment, at: lineStart, effectiveRange: nil) as? CheckboxAttachment {
 
-            // If line is just checkbox + space (empty checkbox line), remove it and insert normal newline
+            // If line is just checkbox (empty checkbox line), remove it and insert normal newline
             let lineContentLength = contentsEnd - lineStart
-            if lineContentLength <= 2 { // checkbox (1 char) + space (1 char)
+            if lineContentLength <= 1 { // checkbox (1 char) only
                 textStorage.replaceCharacters(in: lineRange, with: "")
                 return false // Let default newline behavior happen
             }
@@ -165,10 +165,9 @@ class DueyTextView: NSTextView {
             // Insert newline and new checkbox
             let attributes = textStorage.attributes(at: cursorPosition > 0 ? cursorPosition - 1 : 0, effectiveRange: nil)
 
-            // Create new unchecked checkbox
+            // Create new unchecked checkbox (no space needed, checkbox width provides spacing)
             let newCheckbox = CheckboxAttachment(isChecked: false, text: "")
             let checkboxString = NSMutableAttributedString(attachment: newCheckbox)
-            checkboxString.append(NSAttributedString(string: " ", attributes: attributes))
 
             // Insert newline first, then the checkbox
             let newlineAndCheckbox = NSMutableAttributedString(string: "\n", attributes: attributes)
@@ -414,16 +413,15 @@ class DueyTextView: NSTextView {
         var contentsEnd = 0
         string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
 
-        // Create checkbox attachment without text
+        // Create checkbox attachment without text (no space needed, checkbox width provides spacing)
         let checkbox = CheckboxAttachment(isChecked: false, text: "")
 
         // Get attributes safely - use position before lineStart if lineStart is at the end
         let attrPosition = lineStart < textStorage.length ? lineStart : max(0, textStorage.length - 1)
         let attrs = textStorage.length > 0 ? textStorage.attributes(at: attrPosition, effectiveRange: nil) : typingAttributes
 
-        // Create attributed string with the attachment and a space
+        // Create attributed string with the attachment
         let attachmentString = NSMutableAttributedString(attachment: checkbox)
-        attachmentString.append(NSAttributedString(string: " ", attributes: attrs))
 
         // Insert at the start of the line with undo support
         textStorage.beginEditing()
@@ -433,7 +431,7 @@ class DueyTextView: NSTextView {
         // Set undo action name for better UX
         undoManager?.setActionName("Insert Checkbox")
 
-        // Move cursor after the checkbox and space
+        // Move cursor after the checkbox
         setSelectedRange(NSRange(location: lineStart + attachmentString.length, length: 0))
 
         // CRITICAL: Manually trigger delegate notification since programmatic changes

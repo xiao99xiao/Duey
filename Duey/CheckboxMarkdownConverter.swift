@@ -21,27 +21,17 @@ class CheckboxMarkdownConverter {
         let string = attributedString.string as NSString
 
         // Iterate through each character
-        var i = 0
-        while i < attributedString.length {
+        for i in 0..<attributedString.length {
             // Check if this position has an attachment
             if let attachment = attributedString.attribute(.attachment, at: i, effectiveRange: nil) as? CheckboxAttachment {
                 // Convert checkbox to markdown with a space after it
                 let markdownCheckbox = attachment.isChecked ? "- [x] " : "- [ ] "
                 result.append(markdownCheckbox)
-
-                // Skip the next character if it's a space (to avoid double spacing)
-                if i + 1 < attributedString.length {
-                    let nextChar = string.character(at: i + 1)
-                    if nextChar == 32 { // ASCII space
-                        i += 1 // Skip the space
-                    }
-                }
             } else {
                 // Regular character - just append it
                 let char = string.character(at: i)
                 result.append(String(utf16CodeUnits: [char], count: 1))
             }
-            i += 1
         }
 
         return result as String
@@ -82,12 +72,9 @@ class CheckboxMarkdownConverter {
             let state = nsString.substring(with: stateRange)
             let isChecked = (state == "x")
 
-            // Create checkbox attachment (without storing text in the attachment)
+            // Create checkbox attachment (no space needed, checkbox width provides spacing)
             let checkbox = CheckboxAttachment(isChecked: isChecked, text: "")
             let attachmentString = NSMutableAttributedString(attachment: checkbox)
-
-            // Add a space after the checkbox
-            attachmentString.append(NSAttributedString(string: " ", attributes: attributes))
 
             result.append(attachmentString)
 
