@@ -27,8 +27,13 @@ struct RichTextEditorView: View {
                                 options: [.documentType: NSAttributedString.DocumentType.rtf],
                                 documentAttributes: nil
                             ) {
+                                // CRITICAL: Restore CheckboxAttachments from generic NSTextAttachments
+                                // RTF round-trip loses the CheckboxAttachment subclass
+                                let mutableAttrString = NSMutableAttributedString(attributedString: nsAttrString)
+                                CheckboxAttachment.restoreCheckboxes(in: mutableAttrString)
+
                                 // Convert NSAttributedString → SwiftUI AttributedString
-                                editingText = (try? AttributedString(nsAttrString, including: \.appKit)) ?? AttributedString("")
+                                editingText = (try? AttributedString(mutableAttrString, including: \.appKit)) ?? AttributedString("")
                             } else {
                                 editingText = AttributedString("")
                             }

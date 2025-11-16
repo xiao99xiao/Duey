@@ -100,6 +100,25 @@ class CheckboxAttachment: NSTextAttachment {
         return CheckboxAttachment(id: id, isChecked: checked, text: text)
     }
 
+    /// Restores CheckboxAttachments from an NSAttributedString that may contain generic NSTextAttachments
+    /// This is needed because RTF round-trip loses the CheckboxAttachment subclass
+    static func restoreCheckboxes(in attributedString: NSMutableAttributedString) {
+        let range = NSRange(location: 0, length: attributedString.length)
+
+        // Find all generic NSTextAttachments that have our checkbox JSON data
+        attributedString.enumerateAttribute(.attachment, in: range) { value, attachmentRange, _ in
+            guard let attachment = value as? NSTextAttachment,
+                  !(attachment is CheckboxAttachment), // Skip if already CheckboxAttachment
+                  let contents = attachment.contents,
+                  let checkboxAttachment = CheckboxAttachment.from(data: contents) else {
+                return
+            }
+
+            // Replace generic attachment with CheckboxAttachment
+            attributedString.addAttribute(.attachment, value: checkboxAttachment, range: attachmentRange)
+        }
+    }
+
     // MARK: - View Provider
 
     override func viewProvider(for parentView: NSView?, location: NSTextLocation, textContainer: NSTextContainer?) -> NSTextAttachmentViewProvider? {

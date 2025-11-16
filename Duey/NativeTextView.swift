@@ -104,20 +104,23 @@ struct NativeTextView: NSViewRepresentable {
 
         // Check if current text has CheckboxAttachments
         let currentAttributedString = textView.attributedString()
-        let hasCheckboxes = currentAttributedString.containsAttachments(ofType: CheckboxAttachment.self)
+        let currentHasCheckboxes = currentAttributedString.containsAttachments(ofType: CheckboxAttachment.self)
 
-        print("   hasCheckboxes in current text: \(hasCheckboxes)")
+        print("   hasCheckboxes in current text: \(currentHasCheckboxes)")
 
-        // CRITICAL: Don't replace text if it contains CheckboxAttachments
-        // The AttributedString → NSAttributedString conversion loses custom attachment subclasses
-        if hasCheckboxes {
-            print("   ⏭️ Skipping - would destroy CheckboxAttachments")
+        // Convert AttributedString → NSAttributedString
+        guard let newNSAttributedString = try? NSAttributedString(text, including: \.appKit) else {
+            print("   ⏭️ Skipping - conversion failed")
             return
         }
 
+        // CRITICAL: Restore CheckboxAttachments from generic NSTextAttachments
+        // AttributedString → NSAttributedString conversion loses CheckboxAttachment subclass
+        let mutableNewAttrString = NSMutableAttributedString(attributedString: newNSAttributedString)
+        CheckboxAttachment.restoreCheckboxes(in: mutableNewAttrString)
+
         // Only update if text actually changed (external change, like loading a task)
-        if let newNSAttributedString = try? NSAttributedString(text, including: \.appKit),
-           !currentAttributedString.isEqual(to: newNSAttributedString) {
+        if !currentAttributedString.isEqual(to: mutableNewAttrString) {
 
             print("   🔄 Updating text - content changed")
 
@@ -125,7 +128,12 @@ struct NativeTextView: NSViewRepresentable {
             let savedRange = textView.selectedRange()
 
             // Update text
-            textView.textStorage?.setAttributedString(newNSAttributedString)
+            textView.textStorage?.setAttributedString(mutableNewAttrString)
+
+            // Refresh checkbox cache after loading new content
+            if let dueyTextView = textView as? DueyTextView {
+                dueyTextView.refreshCheckboxAttachmentCache()
+            }
 
             // Restore selection if valid
             if savedRange.location + savedRange.length <= textView.string.count {
@@ -197,18 +205,10 @@ struct NativeTextView: NSViewRepresentable {
             let hasCheckboxes = nsAttributedString.containsAttachments(ofType: CheckboxAttachment.self)
             print("   has CheckboxAttachments: \(hasCheckboxes)")
 
-            // CRITICAL: Don't update binding if text contains CheckboxAttachments
-            // AttributedString conversion loses custom NSTextAttachment subclasses
-            // Force TextKit 2 to refresh attachment views
-            if hasCheckboxes {
-                print("   ⚠️ Has checkboxes - forcing layout refresh")
-                if let textLayoutManager = textView.textLayoutManager,
-                   let fullRange = NSTextRange(location: textLayoutManager.documentRange.location, end: textLayoutManager.documentRange.endLocation) {
-                    textLayoutManager.invalidateLayout(for: fullRange)
-                }
-                return
-            }
-
+            // Convert to AttributedString
+            // NOTE: This will convert CheckboxAttachment → generic NSTextAttachment
+            // But the checkbox JSON data in 'contents' will be preserved through RTF
+            // CheckboxAttachment.restoreCheckboxes() will restore them when loading
             if let attributedString = try? AttributedString(nsAttributedString, including: \.appKit) {
                 // Only update binding if text actually changed
                 if attributedString != text {
