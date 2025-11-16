@@ -5,7 +5,7 @@
 //  Interactive checkbox view for text attachments
 //
 
-import AppKit
+internal import AppKit
 
 /// Custom NSView containing an interactive checkbox button
 class CheckboxView: NSView {

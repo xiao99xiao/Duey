@@ -5,7 +5,7 @@
 //  View provider for checkbox attachments
 //
 
-import AppKit
+internal import AppKit
 
 /// Provides views for checkbox attachments
 class CheckboxViewProvider: NSTextAttachmentViewProvider {
@@ -31,9 +31,17 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
     // MARK: - Sizing
 
     override func attachmentBounds(for attributes: [NSAttributedString.Key : Any], location: NSTextLocation, textContainer: NSTextContainer?, proposedLineFragment: CGRect, position: CGPoint) -> CGRect {
-        // Return the size of the checkbox view
-        // Height matches line height, width is square
-        let height = proposedLineFragment.height
-        return CGRect(x: 0, y: 0, width: height, height: height)
+        // Use a fixed, reasonable size for the checkbox
+        let checkboxSize: CGFloat = 16.0
+
+        // Calculate Y-offset to align with text baseline
+        // Get font from attributes to calculate proper alignment
+        let font = attributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+
+        // Align checkbox vertically centered with the font's cap height
+        // This puts it inline with uppercase letters
+        let yOffset = (font.descender + font.capHeight - checkboxSize) / 2.0
+
+        return CGRect(x: 0, y: yOffset, width: checkboxSize, height: checkboxSize)
     }
 }

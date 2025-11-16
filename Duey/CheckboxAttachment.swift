@@ -5,7 +5,7 @@
 //  Custom NSTextAttachment for interactive checkboxes
 //
 
-import AppKit
+internal import AppKit
 import Foundation
 
 /// Custom text attachment that represents an interactive checkbox

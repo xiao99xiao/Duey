@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AppKit
+internal import AppKit
 
 /// Converts between CheckboxAttachment and markdown checkbox syntax
 class CheckboxMarkdownConverter {
