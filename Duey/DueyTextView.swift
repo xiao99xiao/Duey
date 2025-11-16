@@ -345,40 +345,36 @@ class DueyTextView: NSTextView {
 
     // MARK: - Checkbox Support
 
-    /// Inserts a checkbox at the current cursor position or converts selected text to checkbox
+    /// Inserts a checkbox at the start of the current line
     func insertCheckbox() {
         guard let textStorage = textStorage else { return }
 
-        let selectedRange = selectedRange()
-        let cursorPosition = selectedRange.location
+        let cursorPosition = selectedRange().location
+        let string = textStorage.string as NSString
 
-        // Get the selected text (if any) to use as checkbox label
-        let selectedText = selectedRange.length > 0 ?
-            textStorage.attributedSubstring(from: selectedRange).string : ""
+        // Find the start of the current line
+        var lineStart = 0
+        var lineEnd = 0
+        var contentsEnd = 0
+        string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
 
-        // Create checkbox attachment
-        let checkbox = CheckboxAttachment(isChecked: false, text: selectedText)
+        // Create checkbox attachment without text
+        let checkbox = CheckboxAttachment(isChecked: false, text: "")
 
-        // Create attributed string with the attachment
+        // Create attributed string with the attachment and a space
         let attachmentString = NSMutableAttributedString(attachment: checkbox)
+        attachmentString.append(NSAttributedString(string: " ", attributes: textStorage.attributes(at: lineStart, effectiveRange: nil)))
 
-        // If there's selected text, we need to add a space after checkbox
-        if !selectedText.isEmpty {
-            attachmentString.append(NSAttributedString(string: " "))
-        }
-
-        // Insert or replace with undo support
-        // beginEditing/endEditing automatically registers undo operations
+        // Insert at the start of the line with undo support
         textStorage.beginEditing()
-        textStorage.replaceCharacters(in: selectedRange, with: attachmentString)
+        textStorage.insert(attachmentString, at: lineStart)
         textStorage.endEditing()
 
         // Set undo action name for better UX
         undoManager?.setActionName("Insert Checkbox")
 
-        // Move cursor after the checkbox
-        let newPosition = cursorPosition + attachmentString.length
-        setSelectedRange(NSRange(location: newPosition, length: 0))
+        // Move cursor after the checkbox and space
+        setSelectedRange(NSRange(location: lineStart + attachmentString.length, length: 0))
     }
 
     // MARK: - Markdown Copy/Paste
