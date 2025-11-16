@@ -16,6 +16,22 @@ class TextViewRef: ObservableObject {
     @Published var selectionRect: CGRect = .zero
 }
 
+// MARK: - NSAttributedString Extension
+
+extension NSAttributedString {
+    /// Checks if the attributed string contains attachments of a specific type
+    func containsAttachments<T: NSTextAttachment>(ofType type: T.Type) -> Bool {
+        var found = false
+        enumerateAttribute(.attachment, in: NSRange(location: 0, length: length)) { value, range, stop in
+            if value is T {
+                found = true
+                stop.pointee = true
+            }
+        }
+        return found
+    }
+}
+
 /// SwiftUI wrapper for DueyTextView with bidirectional text synchronization
 struct NativeTextView: NSViewRepresentable {
     @Binding var text: AttributedString
@@ -78,8 +94,18 @@ struct NativeTextView: NSViewRepresentable {
         // This prevents destroying formatting and breaking Return key
         guard !context.coordinator.isEditingText else { return }
 
-        // Only update if text actually changed (external change, like loading a task)
+        // Check if current text has CheckboxAttachments
         let currentAttributedString = textView.attributedString()
+        let hasCheckboxes = currentAttributedString.containsAttachments(ofType: CheckboxAttachment.self)
+
+        // CRITICAL: Don't replace text if it contains CheckboxAttachments
+        // The AttributedString → NSAttributedString conversion loses custom attachment subclasses
+        if hasCheckboxes {
+            print("⚠️ Skipping updateNSView - text contains CheckboxAttachments that would be lost")
+            return
+        }
+
+        // Only update if text actually changed (external change, like loading a task)
         if let newNSAttributedString = try? NSAttributedString(text, including: \.appKit),
            !currentAttributedString.isEqual(to: newNSAttributedString) {
 

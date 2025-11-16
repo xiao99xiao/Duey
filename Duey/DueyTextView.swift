@@ -352,14 +352,21 @@ class DueyTextView: NSTextView {
         let cursorPosition = selectedRange().location
         let string = textStorage.string as NSString
 
+        print("🔍 insertCheckbox called:")
+        print("   textStorage.length: \(textStorage.length)")
+        print("   cursorPosition: \(cursorPosition)")
+
         // Find the start of the current line
         var lineStart = 0
         var lineEnd = 0
         var contentsEnd = 0
         string.getLineStart(&lineStart, end: &lineEnd, contentsEnd: &contentsEnd, for: NSRange(location: cursorPosition, length: 0))
 
+        print("   lineStart: \(lineStart), lineEnd: \(lineEnd)")
+
         // Create checkbox attachment without text
         let checkbox = CheckboxAttachment(isChecked: false, text: "")
+        print("   Created checkbox with id: \(checkbox.id)")
 
         // Get attributes safely - use position before lineStart if lineStart is at the end
         let attrPosition = lineStart < textStorage.length ? lineStart : max(0, textStorage.length - 1)
