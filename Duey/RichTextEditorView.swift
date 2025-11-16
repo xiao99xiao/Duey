@@ -27,6 +27,9 @@ struct RichTextEditorView: View {
 struct RTFTextEditor: View {
     @Binding var rtfData: Data?
     @StateObject private var textViewRef = TextViewRef()
+    @State private var showLinkPopover = false
+    @State private var linkURL = ""
+    @State private var linkText = ""
 
     var body: some View {
         GeometryReader { geometry in
@@ -66,6 +69,20 @@ struct RTFTextEditor: View {
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: textViewRef.hasSelection)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: textViewRef.selectionRect)
+        .onAppear {
+            // Set up keyboard shortcut for link insertion
+            NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                // Check for Command+K
+                if event.keyCode == 40 && event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.shift) && !event.modifierFlags.contains(.option) {
+                    if textViewRef.hasSelection {
+                        prepareLink()
+                        showLinkPopover = true
+                        return nil // Event handled
+                    }
+                }
+                return event
+            }
+        }
     }
 
     // MARK: - Formatting Toolbar (copied from RichTextEditor)
@@ -141,9 +158,78 @@ struct RTFTextEditor: View {
             }
             .buttonStyle(.plain)
             .help("Checkbox (⌘⇧L)")
+
+            Divider().frame(height: 16)
+
+            // Link
+            Button(action: {
+                prepareLink()
+                showLinkPopover = true
+            }) {
+                Image(systemName: "link")
+                    .font(.system(size: 14, weight: hasLink ? .bold : .regular))
+                    .foregroundStyle(hasLink ? .blue : .primary)
+            }
+            .buttonStyle(.plain)
+            .help("Insert Link (⌘K)")
+            .popover(isPresented: $showLinkPopover) {
+                linkPopoverContent
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+    }
+
+    private var linkPopoverContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Edit Link")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Text:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("Link text", text: $linkText)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 250)
+                    .onSubmit {
+                        updateLink()
+                    }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("URL:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("https://example.com", text: $linkURL)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 250)
+                    .onSubmit {
+                        updateLink()
+                    }
+            }
+
+            Text("Leave URL empty to remove link")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Button("Cancel") {
+                    showLinkPopover = false
+                    linkURL = ""
+                    linkText = ""
+                }
+                .keyboardShortcut(.escape)
+
+                Spacer()
+
+                Button("Update") {
+                    updateLink()
+                }
+                .keyboardShortcut(.return)
+            }
+        }
+        .padding()
     }
 
     // MARK: - Formatting State & Actions (copied from RichTextEditor)
@@ -168,6 +254,11 @@ struct RTFTextEditor: View {
     private var hasStrikethrough: Bool {
         guard let textView = textViewRef.textView else { return false }
         return textView.typingAttributes[.strikethroughStyle] != nil
+    }
+
+    private var hasLink: Bool {
+        guard let textView = textViewRef.textView else { return false }
+        return textView.typingAttributes[.link] != nil
     }
 
     private func toggleBold() {
@@ -293,5 +384,61 @@ struct RTFTextEditor: View {
     private func insertCheckbox() {
         guard let textView = textViewRef.textView as? DueyTextView else { return }
         textView.insertCheckbox()
+    }
+
+    private func prepareLink() {
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
+
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+
+        // Pre-fill link text with selected text
+        linkText = (textStorage.string as NSString).substring(with: range)
+
+        // Check if selection already has a link
+        if let existingLink = textStorage.attribute(.link, at: range.location, effectiveRange: nil) as? URL {
+            linkURL = existingLink.absoluteString
+        }
+    }
+
+    private func updateLink() {
+        guard let textView = textViewRef.textView,
+              let textStorage = textView.textStorage else { return }
+
+        let range = textView.selectedRange()
+        guard range.length > 0 else {
+            // No selection, close popover
+            showLinkPopover = false
+            linkURL = ""
+            linkText = ""
+            return
+        }
+
+        textStorage.beginEditing()
+
+        if linkURL.isEmpty {
+            // Empty URL = remove link
+            textStorage.removeAttribute(.link, range: range)
+        } else if let url = URL(string: linkURL) {
+            // Valid URL = add/update link
+            textStorage.addAttribute(.link, value: url, range: range)
+
+            // If link text was provided, replace the selected text
+            if !linkText.isEmpty {
+                let existingAttrs = textStorage.attributes(at: range.location, effectiveRange: nil)
+                var attrs = existingAttrs
+                attrs[.link] = url
+                let linkString = NSAttributedString(string: linkText, attributes: attrs)
+                textStorage.replaceCharacters(in: range, with: linkString)
+            }
+        }
+
+        textStorage.endEditing()
+
+        // Reset state
+        showLinkPopover = false
+        linkURL = ""
+        linkText = ""
     }
 }
