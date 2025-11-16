@@ -9,8 +9,9 @@ internal import AppKit
 import Foundation
 
 /// Custom text attachment that represents an interactive checkbox
-class CheckboxAttachment: NSTextAttachment, NSSecureCoding {
-    static var supportsSecureCoding: Bool { return true }
+class CheckboxAttachment: NSTextAttachment {
+    // NSTextAttachment already conforms to NSSecureCoding
+    override class var supportsSecureCoding: Bool { return true }
 
     // MARK: - Properties
 
@@ -46,6 +47,24 @@ class CheckboxAttachment: NSTextAttachment, NSSecureCoding {
         super.init(data: nil, ofType: nil)
 
         // Set up the attachment data
+        updateAttachmentData()
+    }
+
+    required init(data contentData: Data?, ofType uti: String?) {
+        self.id = UUID()
+        self.isChecked = false
+        self.text = ""
+
+        super.init(data: contentData, ofType: uti)
+
+        // Try to restore from contentData if it's our JSON format
+        if let contentData = contentData,
+           let restored = CheckboxAttachment.from(data: contentData) {
+            self.id = restored.id
+            self.isChecked = restored.isChecked
+            self.text = restored.text
+        }
+
         updateAttachmentData()
     }
 
