@@ -101,7 +101,6 @@ struct NativeTextView: NSViewRepresentable {
         // CRITICAL: Don't replace text if it contains CheckboxAttachments
         // The AttributedString → NSAttributedString conversion loses custom attachment subclasses
         if hasCheckboxes {
-            print("⚠️ Skipping updateNSView - text contains CheckboxAttachments that would be lost")
             return
         }
 

@@ -103,9 +103,6 @@ class CheckboxAttachment: NSTextAttachment {
     // MARK: - View Provider
 
     override func viewProvider(for parentView: NSView?, location: NSTextLocation, textContainer: NSTextContainer?) -> NSTextAttachmentViewProvider? {
-        print("✅ CheckboxAttachment.viewProvider called for id: \(id)")
-        print("   parentView: \(String(describing: parentView))")
-        print("   textLayoutManager: \(String(describing: textContainer?.textLayoutManager))")
         return CheckboxViewProvider(textAttachment: self, parentView: parentView, textLayoutManager: textContainer?.textLayoutManager, location: location)
     }
 }
