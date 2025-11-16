@@ -17,44 +17,24 @@ class CheckboxMarkdownConverter {
     /// - Parameter attributedString: Source attributed string with checkboxes
     /// - Returns: Plain text with markdown checkbox syntax (- [ ] or - [x])
     static func toMarkdown(_ attributedString: NSAttributedString) -> String {
-        let mutableResult = NSMutableString()
-        let fullRange = NSRange(location: 0, length: attributedString.length)
+        let result = NSMutableString()
+        let string = attributedString.string as NSString
 
-        var currentPosition = 0
-
-        // Enumerate attachments
-        attributedString.enumerateAttribute(
-            .attachment,
-            in: fullRange
-        ) { value, range, stop in
-            // Add any text before this attachment
-            if range.location > currentPosition {
-                let textRange = NSRange(location: currentPosition, length: range.location - currentPosition)
-                mutableResult.append(attributedString.attributedSubstring(from: textRange).string)
+        // Iterate through each character
+        for i in 0..<attributedString.length {
+            // Check if this position has an attachment
+            if let attachment = attributedString.attribute(.attachment, at: i, effectiveRange: nil) as? CheckboxAttachment {
+                // Convert checkbox to markdown
+                let markdownCheckbox = attachment.isChecked ? "- [x]" : "- [ ]"
+                result.append(markdownCheckbox)
+            } else {
+                // Regular character - just append it
+                let char = string.character(at: i)
+                result.append(String(utf16CodeUnits: [char], count: 1))
             }
-
-            // Convert checkbox attachment to markdown
-            if let checkbox = value as? CheckboxAttachment {
-                let markdownCheckbox = checkbox.isChecked ? "- [x]" : "- [ ]"
-                mutableResult.append(markdownCheckbox)
-
-                // Add checkbox text if it exists
-                if !checkbox.text.isEmpty {
-                    mutableResult.append(" ")
-                    mutableResult.append(checkbox.text)
-                }
-            }
-
-            currentPosition = range.location + range.length
         }
 
-        // Add any remaining text after the last attachment
-        if currentPosition < attributedString.length {
-            let textRange = NSRange(location: currentPosition, length: attributedString.length - currentPosition)
-            mutableResult.append(attributedString.attributedSubstring(from: textRange).string)
-        }
-
-        return mutableResult as String
+        return result as String
     }
 
     // MARK: - Import (Markdown → Checkbox)
@@ -67,9 +47,8 @@ class CheckboxMarkdownConverter {
     static func fromMarkdown(_ markdown: String, attributes: [NSAttributedString.Key: Any]) -> NSAttributedString {
         let result = NSMutableAttributedString()
 
-        // Pattern to match markdown checkboxes: - [ ] or - [x]
-        // Captures the checkbox state and optional text after it
-        let pattern = "^- \\[([ x])\\]\\s*(.*)$"
+        // Pattern to match markdown checkboxes at start of line: - [ ] or - [x]
+        let pattern = "^- \\[([ x])\\]"
         let regex = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
 
         let nsString = markdown as NSString
@@ -81,37 +60,31 @@ class CheckboxMarkdownConverter {
         regex?.enumerateMatches(in: markdown, options: [], range: fullRange) { match, flags, stop in
             guard let match = match else { return }
 
-            // Add any text before this match
+            // Add any text before this match (preserving everything including newlines)
             if match.range.location > currentPosition {
                 let textRange = NSRange(location: currentPosition, length: match.range.location - currentPosition)
                 let text = nsString.substring(with: textRange)
                 result.append(NSAttributedString(string: text, attributes: attributes))
             }
 
-            // Extract checkbox state and text
+            // Extract checkbox state
             let stateRange = match.range(at: 1)
-            let textRange = match.range(at: 2)
-
             let state = nsString.substring(with: stateRange)
-            let checkboxText = nsString.substring(with: textRange)
-
             let isChecked = (state == "x")
 
-            // Create checkbox attachment
-            let checkbox = CheckboxAttachment(isChecked: isChecked, text: checkboxText)
+            // Create checkbox attachment (without storing text in the attachment)
+            let checkbox = CheckboxAttachment(isChecked: isChecked, text: "")
             let attachmentString = NSMutableAttributedString(attachment: checkbox)
 
-            // Add a space after checkbox if there's text
-            if !checkboxText.isEmpty {
-                attachmentString.append(NSAttributedString(string: " ", attributes: attributes))
-            }
+            // Add a space after the checkbox
+            attachmentString.append(NSAttributedString(string: " ", attributes: attributes))
 
             result.append(attachmentString)
 
             currentPosition = match.range.location + match.range.length
         }
 
-        // Add any remaining text
+        // Add any remaining text (preserving everything including newlines)
         if currentPosition < nsString.length {
             let textRange = NSRange(location: currentPosition, length: nsString.length - currentPosition)
             let text = nsString.substring(with: textRange)
