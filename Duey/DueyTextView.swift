@@ -354,7 +354,7 @@ class DueyTextView: NSTextView {
 
     /// Refreshes the cache of CheckboxAttachment strong references
     /// This prevents attachments from being deallocated prematurely
-    private func refreshCheckboxCache() {
+    func refreshCheckboxAttachmentCache() {
         checkboxAttachmentCache.removeAll()
 
         guard let textStorage = textStorage else { return }
@@ -409,16 +409,7 @@ class DueyTextView: NSTextView {
         delegate?.textDidChange?(Notification(name: NSText.didChangeNotification, object: self))
 
         // Refresh checkbox cache to maintain strong references
-        refreshCheckboxCache()
-    }
-
-    override func didChangeSelection() {
-        super.didChangeSelection()
-
-        // CRITICAL: Refresh checkbox cache on selection changes
-        // This prevents NSTextAttachmentViewProvider weak reference bug
-        // where attachments get deallocated during internal text storage updates
-        refreshCheckboxCache()
+        refreshCheckboxAttachmentCache()
     }
 
     // MARK: - Markdown Copy/Paste
@@ -459,7 +450,7 @@ class DueyTextView: NSTextView {
                 setSelectedRange(NSRange(location: selectedRange.location + attributedString.length, length: 0))
 
                 // Refresh checkbox cache after pasting
-                refreshCheckboxCache()
+                refreshCheckboxAttachmentCache()
 
                 return
             }

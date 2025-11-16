@@ -234,6 +234,12 @@ struct NativeTextView: NSViewRepresentable {
             print("   selectedRange: \(selectedRange)")
             print("   hasSelection: \(hasSelection)")
 
+            // CRITICAL: Refresh checkbox cache on selection changes
+            // This prevents NSTextAttachmentViewProvider weak reference bug
+            if let dueyTextView = textView as? DueyTextView {
+                dueyTextView.refreshCheckboxAttachmentCache()
+            }
+
             // Calculate selection rect if there's a selection
             var selectionRect = CGRect.zero
             if hasSelection,
