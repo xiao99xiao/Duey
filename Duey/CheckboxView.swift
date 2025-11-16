@@ -36,10 +36,6 @@ class CheckboxView: NSView {
     // MARK: - Setup
 
     private func setupView() {
-        // DEBUG: Add background color to visualize bounds
-        self.wantsLayer = true
-        self.layer?.backgroundColor = NSColor.red.withAlphaComponent(0.3).cgColor
-
         // Configure checkbox button
         checkboxButton.translatesAutoresizingMaskIntoConstraints = false
         checkboxButton.target = self
@@ -48,10 +44,6 @@ class CheckboxView: NSView {
         checkboxButton.bezelStyle = .rounded
         checkboxButton.isBordered = false
         checkboxButton.imageScaling = .scaleProportionallyDown
-
-        // DEBUG: Add background to button to see its bounds
-        checkboxButton.wantsLayer = true
-        checkboxButton.layer?.backgroundColor = NSColor.blue.withAlphaComponent(0.3).cgColor
 
         addSubview(checkboxButton)
 
@@ -106,17 +98,12 @@ class CheckboxView: NSView {
     // MARK: - Sizing
 
     override var intrinsicContentSize: NSSize {
-        return NSSize(width: 20, height: 20)
+        return NSSize(width: 16, height: 16)
     }
 
     override func layout() {
         super.layout()
         updateCheckboxState()
         updateAccessibilityLabel()
-
-        // DEBUG: Log the view's actual frame
-        print("🔲 CheckboxView.layout:")
-        print("   frame: \(frame)")
-        print("   bounds: \(bounds)")
     }
 }

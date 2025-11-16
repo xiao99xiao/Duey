@@ -14,6 +14,15 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
 
     private var checkboxView: CheckboxView?
 
+    // MARK: - Initialization
+
+    override init(textAttachment: NSTextAttachment, parentView: NSView?, textLayoutManager: NSTextLayoutManager?, location: NSTextLocation) {
+        super.init(textAttachment: textAttachment, parentView: parentView, textLayoutManager: textLayoutManager, location: location)
+
+        // Control view sizing through tracksTextAttachmentViewBounds
+        self.tracksTextAttachmentViewBounds = true
+    }
+
     // MARK: - View Creation
 
     override func loadView() {
@@ -24,6 +33,10 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
         }
 
         let checkbox = CheckboxView(attachment: attachment)
+
+        // Set explicit frame size to ensure proper layout
+        checkbox.frame = NSRect(x: 0, y: 0, width: 16, height: 16)
+
         checkboxView = checkbox
         view = checkbox
     }
@@ -42,16 +55,6 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
         // This puts it inline with uppercase letters
         let yOffset = (font.descender + font.capHeight - checkboxSize) / 2.0
 
-        let bounds = CGRect(x: 0, y: yOffset, width: checkboxSize, height: checkboxSize)
-
-        // DEBUG: Log the bounds and line fragment
-        print("📏 CheckboxViewProvider.attachmentBounds:")
-        print("   proposedLineFragment: \(proposedLineFragment)")
-        print("   font: \(font.fontName) \(font.pointSize)pt")
-        print("   font.descender: \(font.descender), capHeight: \(font.capHeight)")
-        print("   calculated yOffset: \(yOffset)")
-        print("   returning bounds: \(bounds)")
-
-        return bounds
+        return CGRect(x: 0, y: yOffset, width: checkboxSize, height: checkboxSize)
     }
 }
