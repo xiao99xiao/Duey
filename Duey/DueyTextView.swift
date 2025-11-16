@@ -374,18 +374,13 @@ class DueyTextView: NSTextView {
         }
 
         print("🔒 Refreshed checkbox cache: \(checkboxAttachmentCache.count) checkboxes")
-
-        // Force TextKit 2 to recreate views by editing then invalidating
-        if !checkboxRanges.isEmpty, let textLayoutManager = textLayoutManager {
-            for range in checkboxRanges {
-                textStorage.edited(.editedAttributes, range: range, changeInLength: 0)
-            }
-        }
     }
 
     /// Inserts a checkbox at the start of the current line
     func insertCheckbox() {
         guard let textStorage = textStorage else { return }
+
+        print("🆕 insertCheckbox() called")
 
         let cursorPosition = selectedRange().location
         let string = textStorage.string as NSString
@@ -399,6 +394,9 @@ class DueyTextView: NSTextView {
         // Create checkbox attachment without text
         let checkbox = CheckboxAttachment(isChecked: false, text: "")
 
+        print("   Created CheckboxAttachment: \(checkbox.id)")
+        print("   CheckboxAttachment type: \(type(of: checkbox))")
+
         // Get attributes safely - use position before lineStart if lineStart is at the end
         let attrPosition = lineStart < textStorage.length ? lineStart : max(0, textStorage.length - 1)
         let attrs = textStorage.length > 0 ? textStorage.attributes(at: attrPosition, effectiveRange: nil) : typingAttributes
@@ -407,10 +405,27 @@ class DueyTextView: NSTextView {
         let attachmentString = NSMutableAttributedString(attachment: checkbox)
         attachmentString.append(NSAttributedString(string: " ", attributes: attrs))
 
+        print("   About to insert at lineStart: \(lineStart)")
+
         // Insert at the start of the line with undo support
         textStorage.beginEditing()
         textStorage.insert(attachmentString, at: lineStart)
         textStorage.endEditing()
+
+        print("   Inserted successfully")
+
+        // Check what's actually in textStorage at that position
+        let insertedRange = NSRange(location: lineStart, length: 1)
+        if let insertedAttachment = textStorage.attribute(.attachment, at: lineStart, effectiveRange: nil) as? NSTextAttachment {
+            print("   ✅ Found attachment in textStorage: \(type(of: insertedAttachment))")
+            if let cb = insertedAttachment as? CheckboxAttachment {
+                print("   ✅ It's a CheckboxAttachment with id: \(cb.id)")
+            } else {
+                print("   ⚠️ It's a generic NSTextAttachment, NOT CheckboxAttachment!")
+            }
+        } else {
+            print("   ❌ No attachment found in textStorage at position \(lineStart)!")
+        }
 
         // Set undo action name for better UX
         undoManager?.setActionName("Insert Checkbox")

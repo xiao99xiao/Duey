@@ -241,28 +241,38 @@ struct NativeTextView: NSViewRepresentable {
             }
 
             // Calculate selection rect if there's a selection
+            // CRITICAL: Use TextKit 2 APIs to avoid forcing TextKit 1 fallback mode
             var selectionRect = CGRect.zero
             if hasSelection,
-               let layoutManager = textView.layoutManager,
-               let textContainer = textView.textContainer {
+               let textLayoutManager = textView.textLayoutManager,
+               let textContentManager = textView.textContentStorage {
 
-                // Convert character range to glyph range
-                let glyphRange = layoutManager.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
+                // Convert NSRange to NSTextRange for TextKit 2
+                let startLocation = textContentManager.location(textContentManager.documentRange.location, offsetBy: selectedRange.location)
+                let endLocation = textContentManager.location(startLocation!, offsetBy: selectedRange.length)
 
-                // Get bounding rect for the glyph range
-                var rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+                if let startLocation = startLocation,
+                   let endLocation = endLocation,
+                   let textRange = NSTextRange(location: startLocation, end: endLocation) {
 
-                // Add text container origin
-                let containerOrigin = textView.textContainerOrigin
-                rect.origin.x += containerOrigin.x
-                rect.origin.y += containerOrigin.y
+                    // Enumerate layout fragments in the selection
+                    textLayoutManager.enumerateTextLayoutFragments(from: textRange.location, options: [], using: { layoutFragment in
+                        // Check if fragment intersects our selection
+                        let fragmentRange = layoutFragment.rangeInElement
+                        if fragmentRange.location.compare(textRange.endLocation) != .orderedDescending {
+                            // Get the frame for this fragment
+                            selectionRect = selectionRect.union(layoutFragment.layoutFragmentFrame)
+                        }
 
-                // Convert to the scroll view's coordinate system (parent of textView)
-                if let scrollView = textView.enclosingScrollView {
-                    rect = textView.convert(rect, to: scrollView)
+                        // Stop if we've passed the end of selection
+                        return fragmentRange.endLocation.compare(textRange.endLocation) == .orderedAscending
+                    })
+
+                    // Convert to the scroll view's coordinate system
+                    if let scrollView = textView.enclosingScrollView {
+                        selectionRect = textView.convert(selectionRect, to: scrollView)
+                    }
                 }
-
-                selectionRect = rect
             }
 
             // Update published properties
