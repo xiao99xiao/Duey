@@ -133,7 +133,7 @@ class DueyTextView: NSTextView {
 
     // MARK: - List Continuation
 
-    /// Handles Return key - continues lists on new line or removes empty bullets
+    /// Handles Return key - continues lists and checkboxes on new line or removes empty items
     private func handleReturnKey() -> Bool {
         guard let textStorage = textStorage else { return false }
 
@@ -150,6 +150,38 @@ class DueyTextView: NSTextView {
         // Get the current line text
         let lineRange = NSRange(location: lineStart, length: contentsEnd - lineStart)
         let lineText = string.substring(with: lineRange)
+
+        // Check if line starts with a checkbox attachment
+        if lineStart < textStorage.length,
+           let attachment = textStorage.attribute(.attachment, at: lineStart, effectiveRange: nil) as? CheckboxAttachment {
+
+            // If line is just checkbox + space (empty checkbox line), remove it and insert normal newline
+            let lineContentLength = contentsEnd - lineStart
+            if lineContentLength <= 2 { // checkbox (1 char) + space (1 char)
+                textStorage.replaceCharacters(in: lineRange, with: "")
+                return false // Let default newline behavior happen
+            }
+
+            // Insert newline and new checkbox
+            let attributes = textStorage.attributes(at: cursorPosition > 0 ? cursorPosition - 1 : 0, effectiveRange: nil)
+
+            // Create new unchecked checkbox
+            let newCheckbox = CheckboxAttachment(isChecked: false, text: "")
+            let checkboxString = NSMutableAttributedString(attachment: newCheckbox)
+            checkboxString.append(NSAttributedString(string: " ", attributes: attributes))
+
+            // Insert newline first, then the checkbox
+            let newlineAndCheckbox = NSMutableAttributedString(string: "\n", attributes: attributes)
+            newlineAndCheckbox.append(checkboxString)
+
+            textStorage.insert(newlineAndCheckbox, at: cursorPosition)
+            setSelectedRange(NSRange(location: cursorPosition + newlineAndCheckbox.length, length: 0))
+
+            // Refresh checkbox cache to include the new checkbox
+            refreshCheckboxAttachmentCache()
+
+            return true // We handled it
+        }
 
         // Extract leading spaces (indentation)
         var indent = ""
