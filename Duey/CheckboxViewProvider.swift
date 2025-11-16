@@ -42,6 +42,16 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
         // This puts it inline with uppercase letters
         let yOffset = (font.descender + font.capHeight - checkboxSize) / 2.0
 
-        return CGRect(x: 0, y: yOffset, width: checkboxSize, height: checkboxSize)
+        let bounds = CGRect(x: 0, y: yOffset, width: checkboxSize, height: checkboxSize)
+
+        // DEBUG: Log the bounds and line fragment
+        print("📏 CheckboxViewProvider.attachmentBounds:")
+        print("   proposedLineFragment: \(proposedLineFragment)")
+        print("   font: \(font.fontName) \(font.pointSize)pt")
+        print("   font.descender: \(font.descender), capHeight: \(font.capHeight)")
+        print("   calculated yOffset: \(yOffset)")
+        print("   returning bounds: \(bounds)")
+
+        return bounds
     }
 }
