@@ -35,7 +35,7 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
         let checkbox = CheckboxView(attachment: attachment)
 
         // Set explicit frame size to ensure proper layout
-        checkbox.frame = NSRect(x: 0, y: 0, width: 20, height: 16)
+        checkbox.frame = NSRect(x: 0, y: 0, width: 20, height: 18)
 
         checkboxView = checkbox
         view = checkbox
@@ -44,9 +44,9 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
     // MARK: - Sizing
 
     override func attachmentBounds(for attributes: [NSAttributedString.Key : Any], location: NSTextLocation, textContainer: NSTextContainer?, proposedLineFragment: CGRect, position: CGPoint) -> CGRect {
-        // Use a fixed size for the checkbox (width=20 for extra spacing, height=16)
+        // Use a fixed size for the checkbox (width=20 for spacing, height=18 for 1px top+bottom breathing room)
         let checkboxWidth: CGFloat = 20.0
-        let checkboxHeight: CGFloat = 16.0
+        let checkboxHeight: CGFloat = 18.0
 
         // Calculate Y-offset to align with text baseline
         // Get font from attributes to calculate proper alignment

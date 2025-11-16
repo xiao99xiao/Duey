@@ -98,7 +98,7 @@ class CheckboxView: NSView {
     // MARK: - Sizing
 
     override var intrinsicContentSize: NSSize {
-        return NSSize(width: 20, height: 16)
+        return NSSize(width: 20, height: 18)
     }
 
     override func layout() {
