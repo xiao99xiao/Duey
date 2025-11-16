@@ -15,8 +15,6 @@ struct RTFNativeTextView: NSViewRepresentable {
     let textViewRef: TextViewRef
 
     func makeNSView(context: Context) -> NSScrollView {
-        print("🏗️ RTFNativeTextView.makeNSView")
-
         // Create scroll view
         let scrollView = NSTextView.scrollableTextView()
         scrollView.hasVerticalScroller = true
@@ -54,16 +52,10 @@ struct RTFNativeTextView: NSViewRepresentable {
             scrollView.documentView = textView
 
             // Load initial archived content
-            if let archivedData = rtfData {
-                print("   Loading archived NSAttributedString: \(archivedData.count) bytes")
-                if let nsAttributedString = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSAttributedString.self, from: archivedData) {
-                    print("   Loaded NSAttributedString: \(nsAttributedString.length) chars")
-
-                    textView.textStorage?.setAttributedString(nsAttributedString)
-                    textView.refreshCheckboxAttachmentCache()
-                } else {
-                    print("   ❌ Failed to unarchive")
-                }
+            if let archivedData = rtfData,
+               let nsAttributedString = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSAttributedString.self, from: archivedData) {
+                textView.textStorage?.setAttributedString(nsAttributedString)
+                textView.refreshCheckboxAttachmentCache()
             }
 
             // Store reference in coordinator and expose to SwiftUI
@@ -77,46 +69,30 @@ struct RTFNativeTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? DueyTextView else { return }
 
-        print("📝 RTFNativeTextView.updateNSView")
-        print("   isEditingText: \(context.coordinator.isEditingText)")
-        print("   needsReload: \(context.coordinator.needsReload)")
-
         // Don't update NSTextView while user is editing
-        guard !context.coordinator.isEditingText else {
-            print("   ⏭️ Skipping - user is editing")
-            return
-        }
+        guard !context.coordinator.isEditingText else { return }
 
         // Only reload if external change detected
-        guard context.coordinator.needsReload else {
-            print("   ⏭️ Skipping - no reload needed")
-            return
-        }
+        guard context.coordinator.needsReload else { return }
 
         // Load archived content
-        if let archivedData = rtfData {
-            print("   Loading archived NSAttributedString: \(archivedData.count) bytes")
-            if let nsAttributedString = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSAttributedString.self, from: archivedData) {
-                print("   Loaded NSAttributedString: \(nsAttributedString.length) chars")
+        if let archivedData = rtfData,
+           let nsAttributedString = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSAttributedString.self, from: archivedData) {
 
-                // Preserve current selection
-                let savedRange = textView.selectedRange()
+            // Preserve current selection
+            let savedRange = textView.selectedRange()
 
-                // Update text
-                textView.textStorage?.setAttributedString(nsAttributedString)
-                textView.refreshCheckboxAttachmentCache()
+            // Update text
+            textView.textStorage?.setAttributedString(nsAttributedString)
+            textView.refreshCheckboxAttachmentCache()
 
-                // Restore selection if valid
-                if savedRange.location + savedRange.length <= textView.string.count {
-                    textView.setSelectedRange(savedRange)
-                }
-
-                context.coordinator.needsReload = false
-            } else {
-                print("   ❌ Failed to unarchive")
+            // Restore selection if valid
+            if savedRange.location + savedRange.length <= textView.string.count {
+                textView.setSelectedRange(savedRange)
             }
+
+            context.coordinator.needsReload = false
         } else {
-            print("   Clearing text (no archived data)")
             textView.textStorage?.setAttributedString(NSAttributedString())
             context.coordinator.needsReload = false
         }
@@ -170,10 +146,6 @@ struct RTFNativeTextView: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-
-            print("🔄 textDidChange")
-
-            // Save to archive
             saveToArchive()
         }
 
@@ -239,42 +211,13 @@ struct RTFNativeTextView: NSViewRepresentable {
             guard let textView = textView,
                   let textStorage = textView.textStorage else { return }
 
-            print("💾 Archiving NSAttributedString")
-            print("   Length: \(textStorage.length)")
-            print("   String: '\(textStorage.string)'")
-
-            // Check for CheckboxAttachments
-            var checkboxCount = 0
-            textStorage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: textStorage.length)) { value, range, _ in
-                if let attachment = value as? CheckboxAttachment {
-                    checkboxCount += 1
-                    print("   Found CheckboxAttachment at range \(range): \(attachment.id), checked: \(attachment.isChecked)")
-                }
-            }
-
             // Create NSAttributedString copy for archiving
             let attrStringToSave = NSAttributedString(attributedString: textStorage)
 
             // Archive using NSKeyedArchiver
             if let data = try? NSKeyedArchiver.archivedData(withRootObject: attrStringToSave, requiringSecureCoding: false) {
-                print("   ✅ Archived: \(data.count) bytes, \(checkboxCount) checkboxes")
-
-                // Test round-trip immediately
-                if let testLoad = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSAttributedString.self, from: data) {
-                    print("   🧪 Test load: \(testLoad.length) chars, string: '\(testLoad.string)'")
-                    var restoredCheckboxes = 0
-                    testLoad.enumerateAttribute(.attachment, in: NSRange(location: 0, length: testLoad.length)) { value, range, _ in
-                        if let attachment = value as? CheckboxAttachment {
-                            restoredCheckboxes += 1
-                            print("   🧪 Found CheckboxAttachment at range \(range): \(attachment.id)")
-                        }
-                    }
-                    print("   🧪 Restored \(restoredCheckboxes) checkboxes")
-                }
-
                 rtfData = data
             } else {
-                print("   ❌ Archiving failed")
                 rtfData = nil
             }
         }

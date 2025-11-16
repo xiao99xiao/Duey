@@ -28,14 +28,9 @@ class CheckboxViewProvider: NSTextAttachmentViewProvider {
     override func loadView() {
         super.loadView()
 
-        print("🎨 CheckboxViewProvider.loadView called")
-
         guard let attachment = textAttachment as? CheckboxAttachment else {
-            print("   ❌ textAttachment is not CheckboxAttachment!")
             return
         }
-
-        print("   ✅ Creating CheckboxView for attachment id: \(attachment.id)")
 
         let checkbox = CheckboxView(attachment: attachment)
 

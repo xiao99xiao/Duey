@@ -25,21 +25,8 @@ class CheckboxView: NSView {
 
         super.init(frame: .zero)
 
-        print("   🔲 CheckboxView.init for attachment id: \(attachment.id)")
-
         setupView()
         updateCheckboxState()
-    }
-
-    deinit {
-        print("   💀 CheckboxView.deinit for attachment id: \(attachment.id)")
-    }
-
-    override func viewWillMove(toSuperview newSuperview: NSView?) {
-        super.viewWillMove(toSuperview: newSuperview)
-        if newSuperview == nil {
-            print("   ⚠️ CheckboxView being removed from superview, id: \(attachment.id)")
-        }
     }
 
     required init?(coder: NSCoder) {
@@ -118,8 +105,5 @@ class CheckboxView: NSView {
         super.layout()
         updateCheckboxState()
         updateAccessibilityLabel()
-
-        print("   📐 CheckboxView.layout called for id: \(attachment.id)")
-        print("      frame: \(frame), superview: \(String(describing: superview))")
     }
 }

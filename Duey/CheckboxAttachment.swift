@@ -16,7 +16,7 @@ class CheckboxAttachment: NSTextAttachment {
     // MARK: - Properties
 
     /// Unique identifier for this checkbox
-    let id: UUID
+    var id: UUID
 
     /// Whether the checkbox is checked
     var isChecked: Bool {
@@ -50,7 +50,7 @@ class CheckboxAttachment: NSTextAttachment {
         updateAttachmentData()
     }
 
-    required init(data contentData: Data?, ofType uti: String?) {
+    required override init(data contentData: Data?, ofType uti: String?) {
         self.id = UUID()
         self.isChecked = false
         self.text = ""
@@ -69,27 +69,37 @@ class CheckboxAttachment: NSTextAttachment {
     }
 
     required init?(coder: NSCoder) {
-        // Decode stored properties
-        if let idString = coder.decodeObject(forKey: "id") as? String,
-           let uuid = UUID(uuidString: idString) {
-            self.id = uuid
-        } else {
-            self.id = UUID()
-        }
-
-        self.isChecked = coder.decodeBool(forKey: "isChecked")
-        self.text = coder.decodeObject(forKey: "text") as? String ?? ""
+        // Initialize with defaults first
+        self.id = UUID()
+        self.isChecked = false
+        self.text = ""
 
         super.init(coder: coder)
 
-        updateAttachmentData()
+        // CRITICAL: Explicitly decode our contents data
+        // NSTextAttachment's superclass does NOT automatically encode/decode contents!
+        if let contentsData = coder.decodeObject(forKey: "checkboxContents") as? Data,
+           let restored = CheckboxAttachment.from(data: contentsData) {
+            self.id = restored.id
+            self.isChecked = restored.isChecked
+            self.text = restored.text
+            self.contents = contentsData  // Also set contents field
+        } else {
+            updateAttachmentData()  // Generate default contents
+        }
     }
 
     override func encode(with coder: NSCoder) {
+        // CRITICAL: Update contents to reflect current state
+        updateAttachmentData()
+
         super.encode(with: coder)
-        coder.encode(id.uuidString, forKey: "id")
-        coder.encode(isChecked, forKey: "isChecked")
-        coder.encode(text, forKey: "text")
+
+        // CRITICAL: Explicitly encode our contents data
+        // NSTextAttachment's superclass does NOT automatically encode/decode contents!
+        if let contents = self.contents {
+            coder.encode(contents, forKey: "checkboxContents")
+        }
     }
 
     // MARK: - Data Management
@@ -125,53 +135,23 @@ class CheckboxAttachment: NSTextAttachment {
     static func restoreCheckboxes(in attributedString: NSMutableAttributedString) {
         let range = NSRange(location: 0, length: attributedString.length)
 
-        print("🔄 restoreCheckboxes() called, length: \(attributedString.length)")
-
-        var restoredCount = 0
-
         // Find all generic NSTextAttachments that have our checkbox JSON data
         attributedString.enumerateAttribute(.attachment, in: range) { value, attachmentRange, _ in
-            print("   Found attachment at range \(attachmentRange)")
-
-            guard let attachment = value as? NSTextAttachment else {
-                print("   ⚠️ Not an NSTextAttachment")
+            guard let attachment = value as? NSTextAttachment,
+                  !(attachment is CheckboxAttachment),
+                  let contents = attachment.contents,
+                  let checkboxAttachment = CheckboxAttachment.from(data: contents) else {
                 return
             }
-
-            print("   Attachment type: \(type(of: attachment))")
-
-            if attachment is CheckboxAttachment {
-                print("   ✅ Already CheckboxAttachment, skipping")
-                return
-            }
-
-            guard let contents = attachment.contents else {
-                print("   ⚠️ No contents data")
-                return
-            }
-
-            print("   Contents size: \(contents.count) bytes")
-
-            guard let checkboxAttachment = CheckboxAttachment.from(data: contents) else {
-                print("   ⚠️ Failed to parse as CheckboxAttachment")
-                return
-            }
-
-            print("   ✅ Restored CheckboxAttachment: \(checkboxAttachment.id)")
 
             // Replace generic attachment with CheckboxAttachment
             attributedString.addAttribute(.attachment, value: checkboxAttachment, range: attachmentRange)
-            restoredCount += 1
         }
-
-        print("🔄 restoreCheckboxes() finished: restored \(restoredCount) checkboxes")
     }
 
     // MARK: - View Provider
 
     override func viewProvider(for parentView: NSView?, location: NSTextLocation, textContainer: NSTextContainer?) -> NSTextAttachmentViewProvider? {
-        print("📦 CheckboxAttachment.viewProvider called for id: \(id)")
-        print("   Type: \(type(of: self))")
         return CheckboxViewProvider(textAttachment: self, parentView: parentView, textLayoutManager: textContainer?.textLayoutManager, location: location)
     }
 }
