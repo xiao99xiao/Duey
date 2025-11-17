@@ -37,7 +37,8 @@ class DueyTextView: NSTextView {
         }
 
         // Handle Return key - continue lists on new line
-        if event.keyCode == 36 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty {
+        // Skip if there's active IME composition (CJK input) - Return is used to confirm composition
+        if event.keyCode == 36 && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty && !hasMarkedText() {
             if handleReturnKey() {
                 return
             }
