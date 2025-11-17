@@ -52,7 +52,8 @@ class DueyTextView: NSTextView {
         }
 
         // Handle Tab key - indent/outdent lists
-        if event.keyCode == 48 {
+        // Skip if there's active IME composition (CJK input) - Tab is used to navigate candidates
+        if event.keyCode == 48 && !hasMarkedText() {
             if event.modifierFlags.contains(.shift) {
                 // Shift+Tab - outdent
                 if handleOutdent() {
