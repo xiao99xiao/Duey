@@ -84,16 +84,7 @@ struct TaskHeaderView: View {
                 .font(.title2)
                 .lineLimit(1...3)
                 .frame(maxWidth: .infinity)
-                .foregroundStyle(Color.clear)
                 .focused($titleFocused)
-                .overlay(
-                    TextEditor(text: $task.title)
-                        .font(.title2)
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .focused($titleFocused)
-                        .allowsHitTesting(task.title.isEmpty ? false : true)
-                )
             .frame(maxWidth: .infinity, alignment: .topLeading)
 
             VStack(alignment: .trailing, spacing: 8) {
