@@ -140,9 +140,7 @@ struct NativeTextView: NSViewRepresentable {
             textView.textStorage?.setAttributedString(mutableNewAttrString)
 
             // Refresh checkbox cache after loading new content
-            if let dueyTextView = textView as? DueyTextView {
-                dueyTextView.refreshCheckboxAttachmentCache()
-            }
+            textView.refreshCheckboxAttachmentCache()
 
             // Restore selection if valid
             if savedRange.location + savedRange.length <= textView.string.count {
