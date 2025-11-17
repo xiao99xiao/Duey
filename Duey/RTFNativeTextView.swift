@@ -28,7 +28,7 @@ struct RTFNativeTextView: NSViewRepresentable {
             // Configure text view
             textView.isRichText = true
             textView.allowsUndo = true
-            textView.font = .systemFont(ofSize: NSFont.systemFontSize)
+            textView.font = .systemFont(ofSize: NSFont.systemFontSize + 1)
             textView.textColor = .labelColor
             textView.backgroundColor = .clear
             textView.drawsBackground = false
