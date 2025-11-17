@@ -145,7 +145,7 @@ struct RTFNativeTextView: NSViewRepresentable {
         }
 
         func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
+            guard notification.object is NSTextView else { return }
             saveToArchive()
         }
 

@@ -245,9 +245,7 @@ struct NativeTextView: NSViewRepresentable {
 
             // CRITICAL: Refresh checkbox cache on selection changes
             // This prevents NSTextAttachmentViewProvider weak reference bug
-            if let dueyTextView = textView as? DueyTextView {
-                dueyTextView.refreshCheckboxAttachmentCache()
-            }
+            (textView as? DueyTextView)?.refreshCheckboxAttachmentCache()
 
             // Calculate selection rect if there's a selection
             // CRITICAL: Use TextKit 2 APIs to avoid forcing TextKit 1 fallback mode

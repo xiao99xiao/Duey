@@ -154,7 +154,7 @@ class DueyTextView: NSTextView {
 
         // Check if line starts with a checkbox attachment
         if lineStart < textStorage.length,
-           let attachment = textStorage.attribute(.attachment, at: lineStart, effectiveRange: nil) as? CheckboxAttachment {
+           textStorage.attribute(.attachment, at: lineStart, effectiveRange: nil) is CheckboxAttachment {
 
             // If line is just checkbox (empty checkbox line), remove it and insert normal newline
             let lineContentLength = contentsEnd - lineStart
@@ -416,10 +416,6 @@ class DueyTextView: NSTextView {
 
         // Create checkbox attachment without text (no space needed, checkbox width provides spacing)
         let checkbox = CheckboxAttachment(isChecked: false, text: "")
-
-        // Get attributes safely - use position before lineStart if lineStart is at the end
-        let attrPosition = lineStart < textStorage.length ? lineStart : max(0, textStorage.length - 1)
-        let attrs = textStorage.length > 0 ? textStorage.attributes(at: attrPosition, effectiveRange: nil) : typingAttributes
 
         // Create attributed string with the attachment
         let attachmentString = NSMutableAttributedString(attachment: checkbox)
