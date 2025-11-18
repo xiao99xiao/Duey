@@ -20,6 +20,24 @@ class DueyTextView: NSTextView {
     // MARK: - Key Event Handling
 
     override func keyDown(with event: NSEvent) {
+        // Handle Command+Shift+[ - move line up
+        if event.keyCode == 33 && // '[' key
+           event.modifierFlags.contains(.command) &&
+           event.modifierFlags.contains(.shift) &&
+           !event.modifierFlags.contains(.option) {
+            moveLineUp()
+            return // Event handled
+        }
+
+        // Handle Command+Shift+] - move line down
+        if event.keyCode == 30 && // ']' key
+           event.modifierFlags.contains(.command) &&
+           event.modifierFlags.contains(.shift) &&
+           !event.modifierFlags.contains(.option) {
+            moveLineDown()
+            return // Event handled
+        }
+
         // Handle Command+Shift+L - insert checkbox
         if event.keyCode == 37 && // 'L' key
            event.modifierFlags.contains(.command) &&
@@ -438,6 +456,114 @@ class DueyTextView: NSTextView {
 
         // Refresh checkbox cache to maintain strong references
         refreshCheckboxAttachmentCache()
+    }
+
+    // MARK: - Line Movement
+
+    /// Moves the current line up by swapping with the line above
+    private func moveLineUp() {
+        guard let textStorage = textStorage else { return }
+
+        let cursorPosition = selectedRange().location
+        guard cursorPosition <= textStorage.length else { return }
+
+        let string = textStorage.string as NSString
+
+        // Find current line range
+        var currentLineStart = 0
+        var currentLineEnd = 0
+        var currentContentsEnd = 0
+        string.getLineStart(&currentLineStart, end: &currentLineEnd, contentsEnd: &currentContentsEnd, for: NSRange(location: cursorPosition, length: 0))
+
+        // Can't move up if already at first line
+        guard currentLineStart > 0 else { return }
+
+        // Find previous line range
+        var prevLineStart = 0
+        var prevLineEnd = 0
+        var prevContentsEnd = 0
+        string.getLineStart(&prevLineStart, end: &prevLineEnd, contentsEnd: &prevContentsEnd, for: NSRange(location: currentLineStart - 1, length: 0))
+
+        // Get the content of both lines (including newline characters)
+        let prevLineRange = NSRange(location: prevLineStart, length: currentLineStart - prevLineStart)
+        let currentLineRange = NSRange(location: currentLineStart, length: currentLineEnd - currentLineStart)
+
+        let prevLineText = textStorage.attributedSubstring(from: prevLineRange)
+        let currentLineText = textStorage.attributedSubstring(from: currentLineRange)
+
+        // Calculate cursor offset within the line
+        let cursorOffsetInLine = cursorPosition - currentLineStart
+
+        // Perform the swap
+        textStorage.beginEditing()
+
+        // Replace both lines with swapped content
+        let combinedRange = NSRange(location: prevLineStart, length: currentLineEnd - prevLineStart)
+        let swappedText = NSMutableAttributedString(attributedString: currentLineText)
+        swappedText.append(prevLineText)
+
+        textStorage.replaceCharacters(in: combinedRange, with: swappedText)
+        textStorage.endEditing()
+
+        // Update cursor position to maintain relative position in the moved line
+        let newCursorPosition = prevLineStart + cursorOffsetInLine
+        setSelectedRange(NSRange(location: newCursorPosition, length: 0))
+
+        // Set undo action name
+        undoManager?.setActionName("Move Line Up")
+    }
+
+    /// Moves the current line down by swapping with the line below
+    private func moveLineDown() {
+        guard let textStorage = textStorage else { return }
+
+        let cursorPosition = selectedRange().location
+        guard cursorPosition <= textStorage.length else { return }
+
+        let string = textStorage.string as NSString
+
+        // Find current line range
+        var currentLineStart = 0
+        var currentLineEnd = 0
+        var currentContentsEnd = 0
+        string.getLineStart(&currentLineStart, end: &currentLineEnd, contentsEnd: &currentContentsEnd, for: NSRange(location: cursorPosition, length: 0))
+
+        // Can't move down if already at last line
+        guard currentLineEnd < string.length else { return }
+
+        // Find next line range
+        var nextLineStart = 0
+        var nextLineEnd = 0
+        var nextContentsEnd = 0
+        string.getLineStart(&nextLineStart, end: &nextLineEnd, contentsEnd: &nextContentsEnd, for: NSRange(location: currentLineEnd, length: 0))
+
+        // Get the content of both lines (including newline characters)
+        let currentLineRange = NSRange(location: currentLineStart, length: currentLineEnd - currentLineStart)
+        let nextLineRange = NSRange(location: nextLineStart, length: nextLineEnd - nextLineStart)
+
+        let currentLineText = textStorage.attributedSubstring(from: currentLineRange)
+        let nextLineText = textStorage.attributedSubstring(from: nextLineRange)
+
+        // Calculate cursor offset within the line
+        let cursorOffsetInLine = cursorPosition - currentLineStart
+
+        // Perform the swap
+        textStorage.beginEditing()
+
+        // Replace both lines with swapped content
+        let combinedRange = NSRange(location: currentLineStart, length: nextLineEnd - currentLineStart)
+        let swappedText = NSMutableAttributedString(attributedString: nextLineText)
+        swappedText.append(currentLineText)
+
+        textStorage.replaceCharacters(in: combinedRange, with: swappedText)
+        textStorage.endEditing()
+
+        // Update cursor position to maintain relative position in the moved line
+        let newCursorPosition = nextLineStart + cursorOffsetInLine
+        setSelectedRange(NSRange(location: newCursorPosition, length: 0))
+
+        // Set undo action name
+        undoManager?.setActionName("Move Line Down")
     }
 
     // MARK: - Markdown Copy/Paste
