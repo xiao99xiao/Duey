@@ -588,7 +588,7 @@ class DueyTextView: NSTextView {
 
                 // Insert at current position
                 guard let textStorage = textStorage else {
-                    super.paste(sender)
+                    super.pasteAsPlainText(sender)
                     return
                 }
 
@@ -610,8 +610,8 @@ class DueyTextView: NSTextView {
             }
         }
 
-        // If not markdown checkboxes, use default paste behavior
-        super.paste(sender)
+        // If not markdown checkboxes, paste as plain text only
+        super.pasteAsPlainText(sender)
     }
 
     /// Override copy to export selected text as markdown (checkboxes → markdown format)
